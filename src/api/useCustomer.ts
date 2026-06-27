@@ -70,7 +70,6 @@ export interface CustomerProfile {
 export interface UpdateProfilePayload {
   name?: string;
   phone?: string;
-  picture?: string;
 }
 
 // ─── Query Keys ───────────────────────────────────────────────────────────────
@@ -196,4 +195,29 @@ export function useAddAddress() {
     mutationFn: (address: Omit<Address, 'id'>) =>
       apiClient.post<{ success: boolean; address: Address }>('/customer/addresses', address),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: customerKeys.addre
+      queryClient.invalidateQueries({ queryKey: customerKeys.addresses() });
+    },
+  });
+}
+
+export function useUpdateAddress() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...data }: Address) =>
+      apiClient.put<{ success: boolean; address: Address }>(`/customer/addresses/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: customerKeys.addresses() });
+    },
+  });
+}
+
+export function useDeleteAddress() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (addressId: string) =>
+      apiClient.delete<{ success: boolean }>(`/customer/addresses/${addressId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: customerKeys.addresses() });
+    },
+  });
+}
