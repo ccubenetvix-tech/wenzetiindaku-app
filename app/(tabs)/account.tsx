@@ -74,7 +74,7 @@ export default function AccountScreen() {
         <View style={styles.profileSection}>
           {isAuthenticated && user ? (
             <>
-              <View style={styles.avatarContainer}>
+              <TouchableOpacity onPress={() => router.push('/profile')} style={styles.avatarContainer}>
                 {user.picture ? (
                   <Image source={{ uri: user.picture }} style={styles.avatar} />
                 ) : (
@@ -82,9 +82,15 @@ export default function AccountScreen() {
                     <Ionicons name="person" size={32} color={Colors.white} />
                   </View>
                 )}
-              </View>
+              </TouchableOpacity>
               <Text style={styles.userName}>{user.name}</Text>
               <Text style={styles.userEmail}>{user.email}</Text>
+              <TouchableOpacity
+                style={styles.editProfileLink}
+                onPress={() => router.push('/profile/edit')}
+              >
+                <Text style={styles.editProfileLinkText}>Edit Profile</Text>
+              </TouchableOpacity>
             </>
           ) : (
             <>
@@ -111,28 +117,28 @@ export default function AccountScreen() {
                 icon="cube-outline"
                 title="My Orders"
                 subtitle="Track and manage orders"
-                onPress={() => {/* Navigate to orders */}}
+                onPress={() => router.push('/orders')}
                 iconColor={Colors.primary}
               />
               <MenuItem
                 icon="heart-outline"
                 title="Wishlist"
                 subtitle="Your saved items"
-                onPress={() => {/* Navigate to wishlist */}}
+                onPress={() => router.push('/wishlist')}
                 iconColor={Colors.error}
               />
               <MenuItem
                 icon="location-outline"
                 title="Addresses"
                 subtitle="Manage delivery addresses"
-                onPress={() => {/* Navigate to addresses */}}
+                onPress={() => router.push('/addresses')}
                 iconColor={Colors.secondary}
               />
               <MenuItem
                 icon="card-outline"
                 title="Payment Methods"
                 subtitle="Manage payment options"
-                onPress={() => {/* Navigate to payments */}}
+                onPress={() => router.push('/legal?type=help')}
                 iconColor={Colors.accent}
               />
             </View>
@@ -146,25 +152,25 @@ export default function AccountScreen() {
             <MenuItem
               icon="help-circle-outline"
               title="Help Center"
-              onPress={() => {/* Navigate to help */}}
+              onPress={() => router.push('/legal?type=help')}
               iconColor={Colors.info}
             />
             <MenuItem
               icon="chatbubble-ellipses-outline"
               title="FAQs"
-              onPress={() => {/* Navigate to FAQs */}}
+              onPress={() => router.push('/legal?type=faq')}
               iconColor={Colors.primary}
             />
             <MenuItem
               icon="airplane-outline"
               title="Shipping Info"
-              onPress={() => {/* Navigate to shipping */}}
+              onPress={() => router.push('/legal?type=shipping')}
               iconColor={Colors.secondary}
             />
             <MenuItem
               icon="return-up-back-outline"
               title="Returns & Refunds"
-              onPress={() => {/* Navigate to returns */}}
+              onPress={() => router.push('/legal?type=returns')}
               iconColor={Colors.accent}
             />
           </View>
@@ -208,25 +214,25 @@ export default function AccountScreen() {
             <MenuItem
               icon="document-text-outline"
               title="Privacy Policy"
-              onPress={() => {/* Navigate to privacy */}}
+              onPress={() => router.push('/legal?type=privacy')}
               iconColor={Colors.gray[600]}
             />
             <MenuItem
               icon="newspaper-outline"
               title="Terms of Service"
-              onPress={() => {/* Navigate to terms */}}
+              onPress={() => router.push('/legal?type=terms')}
               iconColor={Colors.gray[600]}
             />
             <MenuItem
               icon="shield-checkmark-outline"
               title="Cookie Policy"
-              onPress={() => {/* Navigate to cookies */}}
+              onPress={() => router.push('/legal?type=cookies')}
               iconColor={Colors.gray[600]}
             />
             <MenuItem
               icon="storefront-outline"
               title="Vendor Terms"
-              onPress={() => {/* Navigate to vendor terms */}}
+              onPress={() => router.push('/legal?type=vendor')}
               iconColor={Colors.gray[600]}
             />
           </View>
@@ -293,6 +299,16 @@ const styles = StyleSheet.create({
   userEmail: {
     fontSize: FontSize.md,
     color: Colors.text.secondary,
+    marginBottom: Spacing.sm,
+  },
+  editProfileLink: {
+    paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.lg,
+  },
+  editProfileLinkText: {
+    fontSize: FontSize.sm,
+    color: Colors.primary,
+    fontWeight: FontWeight.semibold,
   },
   signInButton: {
     marginTop: Spacing.md,

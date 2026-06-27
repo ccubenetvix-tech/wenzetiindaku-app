@@ -1,19 +1,17 @@
 /**
  * Wishlist Screen
- * Shows all customer saved items, allows remove and add-to-cart
+ * Fetches wishlist from real backend: GET /api/customer/wishlist
  */
 
-import { useAuth } from '@/contexts/auth-context';
-import { useRemoveFromWishlist, useWishlist, type WishlistItem } from '@/src/api/useCustomer';
-import { useCartStore } from '@/src/api/useCart';
-import { ErrorState } from '@/src/components';
+import { useAddToCart } from '@/src/api/useCart';
+import { useRemoveFromWishlist, useWishlist } from '@/src/api/useCustomer';
+import { Header } from '@/src/components';
 import { BorderRadius, Colors, FontSize, FontWeight, Shadow, Spacing } from '@/src/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Image,
   StyleSheet,
@@ -23,119 +21,111 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-function WishlistCard({ item, onRemove, onAddToCart }: {
-  item: WishlistItem;
-  onRemove: () => void;
-  onAddToCart: () => void;
-}) {
-  return (
+export default function WishlistScreen() {
+  const router = useRouter();
+  const { data: wishlist, isLoading, isError, refetch } = useWishlist();
+  const removeFromWishlist = useRemoveFromWishlist();
+  const addToCart = useAddToCart();
+
+  const handleRemove = (productId: string) => {
+    removeFromWishlist.mutate(productId);
+  };
+
+  const handleAddToCart = (item: any) => {
+    addToCart({
+      id: item.productId,
+      name: item.product.name,
+      price: item.product.price,
+      image: item.product.primaryImage,
+      storeId: '',
+      storeName: item.product.store?.name || '',
+    });
+  };
+
+  const renderItem = ({ item }: { item: any }) => (
     <View style={styles.card}>
-      <Image source={{ uri: item.image }} style={styles.image} />
+      <TouchableOpacity
+        style={styles.imageContainer}
+        onPress={() => router.push(`/product/${item.productId}`)}
+        activeOpacity={0.8}
+      >
+        <Image
+          source={{ uri: item.product.primaryImage }}
+          style={styles.image}
+          resizeMode="cover"
+        />
+        {!item.product.inStock && (
+          <View style={styles.outOfStockOverlay}>
+            <Text style={styles.outOfStockText}>Out of Stock</Text>
+          </View>
+        )}
+      </TouchableOpacity>
+
       <View style={styles.info}>
-        <Text style={styles.name} numberOfLines={2}>{item.name}</Text>
-        <Text style={styles.storeName}>{item.storeName}</Text>
-        <Text style={styles.price}>${item.price.toFixed(2)}</Text>
-        {!item.inStock && <Text style={styles.outOfStock}>Out of Stock</Text>}
-      </View>
-      <View style={styles.actions}>
-        <TouchableOpacity onPress={onRemove} style={styles.iconBtn}>
-          <Ionicons name="heart" size={22} color={Colors.error} />
+        <TouchableOpacity onPress={() => router.push(`/product/${item.productId}`)}>
+          <Text style={styles.name} numberOfLines={2}>{item.product.name}</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          onPress={onAddToCart}
-          style={[styles.addBtn, !item.inStock && styles.addBtnDisabled]}
-          disabled={!item.inStock}
-        >
-          <Ionicons name="bag-add-outline" size={16} color={Colors.white} />
-          <Text style={styles.addBtnText}>Add</Text>
-        </TouchableOpacity>
+        {item.product.store?.name && (
+          <Text style={styles.storeName}>{item.product.store.name}</Text>
+        )}
+        <View style={styles.ratingRow}>
+          <Ionicons name="star" size={12} color={Colors.star} />
+          <Text style={styles.rating}>{item.product.rating?.toFixed(1) || '0.0'}</Text>
+        </View>
+        <Text style={styles.price}>${item.product.price?.toFixed(2)}</Text>
+
+        <View style={styles.actions}>
+          <TouchableOpacity
+            style={[styles.cartBtn, !item.product.inStock && styles.cartBtnDisabled]}
+            onPress={() => handleAddToCart(item)}
+            disabled={!item.product.inStock}
+          >
+            <Ionicons name="cart-outline" size={16} color={Colors.white} />
+            <Text style={styles.cartBtnText}>Add to Cart</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.removeBtn}
+            onPress={() => handleRemove(item.productId)}
+          >
+            <Ionicons name="trash-outline" size={18} color={Colors.error} />
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
-}
-
-export default function WishlistScreen() {
-  const router = useRouter();
-  const { isAuthenticated } = useAuth();
-  const { data: wishlist, isLoading, isError, refetch } = useWishlist();
-  const { mutate: removeItem } = useRemoveFromWishlist();
-  const { addItem } = useCartStore();
-
-  const handleRemove = (item: WishlistItem) => {
-    Alert.alert('Remove from Wishlist', `Remove "${item.name}" from your wishlist?`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Remove', style: 'destructive', onPress: () => removeItem(item.id) },
-    ]);
-  };
-
-  const handleAddToCart = (item: WishlistItem) => {
-    addItem({
-      id: item.productId,
-      name: item.name,
-      price: item.price,
-      image: item.image,
-      storeId: '',
-      storeName: item.storeName,
-      quantity: 1,
-    });
-    router.push('/cart');
-  };
-
-  if (!isAuthenticated) {
-    return (
-      <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.headerRow}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <Ionicons name="arrow-back" size={24} color={Colors.text.primary} />
-          </TouchableOpacity>
-          <Text style={styles.title}>Wishlist</Text>
-          <View style={{ width: 40 }} />
-        </View>
-        <ErrorState
-          title="Sign in required"
-          message="Please sign in to view your wishlist."
-          onRetry={() => router.push('/login')}
-          retryLabel="Sign In"
-        />
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.headerRow}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={24} color={Colors.text.primary} />
-        </TouchableOpacity>
-        <Text style={styles.title}>Wishlist</Text>
-        <View style={{ width: 40 }} />
-      </View>
+      <Header title="Wishlist" showSearch={false} showBack />
 
       {isLoading ? (
-        <View style={styles.centered}><ActivityIndicator size="large" color={Colors.primary} /></View>
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={Colors.primary} />
+        </View>
       ) : isError ? (
-        <ErrorState title="Could not load wishlist" message="Pull down to try again." onRetry={refetch} />
+        <View style={styles.center}>
+          <Ionicons name="alert-circle-outline" size={48} color={Colors.error} />
+          <Text style={styles.emptyText}>Failed to load wishlist</Text>
+          <TouchableOpacity style={styles.retryBtn} onPress={() => refetch()}>
+            <Text style={styles.retryText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
       ) : !wishlist || wishlist.length === 0 ? (
-        <View style={styles.empty}>
+        <View style={styles.center}>
           <Ionicons name="heart-outline" size={64} color={Colors.gray[300]} />
           <Text style={styles.emptyTitle}>Your wishlist is empty</Text>
-          <Text style={styles.emptySubtitle}>Save items you love for later.</Text>
-          <TouchableOpacity style={styles.shopBtn} onPress={() => router.push('/(tabs)')}>
-            <Text style={styles.shopBtnText}>Explore Products</Text>
+          <Text style={styles.emptyText}>Save items you love to find them later</Text>
+          <TouchableOpacity style={styles.shopBtn} onPress={() => router.push('/products')}>
+            <Text style={styles.shopBtnText}>Browse Products</Text>
           </TouchableOpacity>
         </View>
       ) : (
         <FlatList
           data={wishlist}
-          keyExtractor={(i) => i.id}
+          keyExtractor={item => item.id}
+          renderItem={renderItem}
           contentContainerStyle={styles.list}
-          renderItem={({ item }) => (
-            <WishlistCard
-              item={item}
-              onRemove={() => handleRemove(item)}
-              onAddToCart={() => handleAddToCart(item)}
-            />
-          )}
           showsVerticalScrollIndicator={false}
         />
       )}
@@ -145,18 +135,7 @@ export default function WishlistScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background.secondary },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    backgroundColor: Colors.white,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border.light,
-  },
-  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  title: { flex: 1, textAlign: 'center', fontSize: FontSize.xl, fontWeight: FontWeight.bold, color: Colors.text.primary },
-  centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing['2xl'] },
   list: { padding: Spacing.lg, gap: Spacing.md },
   card: {
     backgroundColor: Colors.white,
@@ -165,34 +144,46 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...Shadow.sm,
   },
-  image: { width: 96, height: 96 },
-  info: { flex: 1, padding: Spacing.md, justifyContent: 'center', gap: 2 },
-  name: { fontSize: FontSize.md, fontWeight: FontWeight.medium, color: Colors.text.primary },
-  storeName: { fontSize: FontSize.sm, color: Colors.text.secondary },
-  price: { fontSize: FontSize.lg, fontWeight: FontWeight.bold, color: Colors.primary, marginTop: 4 },
-  outOfStock: { fontSize: FontSize.xs, color: Colors.error, fontWeight: FontWeight.medium },
-  actions: { padding: Spacing.md, justifyContent: 'space-between', alignItems: 'center' },
-  iconBtn: { padding: Spacing.sm },
-  addBtn: {
+  imageContainer: { width: 110, height: 130 },
+  image: { width: '100%', height: '100%' },
+  outOfStockOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  outOfStockText: { color: Colors.white, fontSize: FontSize.xs, fontWeight: FontWeight.bold },
+  info: { flex: 1, padding: Spacing.md, justifyContent: 'space-between' },
+  name: { fontSize: FontSize.md, fontWeight: FontWeight.semibold, color: Colors.text.primary, marginBottom: 2 },
+  storeName: { fontSize: FontSize.sm, color: Colors.text.secondary, marginBottom: 4 },
+  ratingRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
+  rating: { fontSize: FontSize.sm, color: Colors.text.secondary, marginLeft: 3 },
+  price: { fontSize: FontSize.lg, fontWeight: FontWeight.bold, color: Colors.primary, marginBottom: Spacing.sm },
+  actions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  cartBtn: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    justifyContent: 'center',
     backgroundColor: Colors.primary,
     paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    borderRadius: BorderRadius.lg,
+    borderRadius: BorderRadius.md,
+    gap: 4,
   },
-  addBtnDisabled: { backgroundColor: Colors.gray[300] },
-  addBtnText: { color: Colors.white, fontSize: FontSize.sm, fontWeight: FontWeight.semibold },
-  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.md, padding: Spacing['4xl'] },
-  emptyTitle: { fontSize: FontSize.xl, fontWeight: FontWeight.bold, color: Colors.text.primary },
-  emptySubtitle: { fontSize: FontSize.md, color: Colors.text.secondary, textAlign: 'center' },
-  shopBtn: {
-    backgroundColor: Colors.primary,
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing['2xl'],
-    borderRadius: BorderRadius.lg,
-    marginTop: Spacing.sm,
+  cartBtnDisabled: { backgroundColor: Colors.gray[300] },
+  cartBtnText: { color: Colors.white, fontSize: FontSize.sm, fontWeight: FontWeight.semibold },
+  removeBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.error + '15',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
+  emptyTitle: { fontSize: FontSize.lg, fontWeight: FontWeight.bold, color: Colors.text.primary, marginTop: Spacing.lg },
+  emptyText: { fontSize: FontSize.md, color: Colors.text.secondary, textAlign: 'center', marginTop: Spacing.sm },
+  retryBtn: { marginTop: Spacing.lg, backgroundColor: Colors.primary, paddingVertical: Spacing.sm, paddingHorizontal: Spacing.xl, borderRadius: BorderRadius.lg },
+  retryText: { color: Colors.white, fontSize: FontSize.md, fontWeight: FontWeight.semibold },
+  shopBtn: { marginTop: Spacing.lg, backgroundColor: Colors.primary, paddingVertical: Spacing.sm, paddingHorizontal: Spacing.xl, borderRadius: BorderRadius.lg },
   shopBtnText: { color: Colors.white, fontSize: FontSize.md, fontWeight: FontWeight.semibold },
 });

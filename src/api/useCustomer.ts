@@ -1,223 +1,180 @@
 /**
- * React Query Hooks for Customer - Orders, Wishlist, Profile, Addresses
- * Wired to the real backend at /api/customer/*
+ * React Query + Mutation hooks for Customer API
+ * Wires to real backend: /api/customer/*
  */
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import apiClient from './client';
+import { Address, Order, User } from './types';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Query Keys ────────────────────────────────────────────────────────────
+export const customerKeys = {
+  profile: ['customer', 'profile'] as const,
+  orders: ['customer', 'orders'] as const,
+  order: (id: string) => ['customer', 'orders', id] as const,
+  addresses: ['customer', 'addresses'] as const,
+  wishlist: ['customer', 'wishlist'] as const,
+};
 
-export interface Address {
-  id: string;
-  label: string;
-  street: string;
-  city: string;
-  state: string;
-  country: string;
-  postalCode: string;
-  isDefault: boolean;
-  phone?: string;
-}
-
-export interface OrderItem {
-  id: string;
-  productId: string;
-  productName: string;
-  productImage: string;
-  quantity: number;
-  price: number;
-  vendorName: string;
-}
-
-export interface Order {
-  id: string;
-  orderNumber: string;
-  status: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'returned';
-  items: OrderItem[];
-  total: number;
-  subtotal: number;
-  shippingCost: number;
-  tax: number;
-  shippingAddress: Address;
-  paymentMethod: string;
-  createdAt: string;
-  updatedAt: string;
-  estimatedDelivery?: string;
-  trackingNumber?: string;
-}
-
+// ─── Types ──────────────────────────────────────────────────────────────────
 export interface WishlistItem {
   id: string;
   productId: string;
-  name: string;
-  price: number;
-  image: string;
-  storeName: string;
-  inStock: boolean;
-  addedAt: string;
-}
-
-export interface CustomerProfile {
-  id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  picture?: string;
+  product: {
+    id: string;
+    name: string;
+    price: number;
+    primaryImage: string;
+    inStock: boolean;
+    rating: number;
+    store?: { name: string };
+  };
   createdAt: string;
 }
 
 export interface UpdateProfilePayload {
-  name?: string;
+  first_name?: string;
+  last_name?: string;
   phone?: string;
 }
 
-// ─── Query Keys ───────────────────────────────────────────────────────────────
-
-export const customerKeys = {
-  all: ['customer'] as const,
-  profile: () => [...customerKeys.all, 'profile'] as const,
-  orders: () => [...customerKeys.all, 'orders'] as const,
-  order: (id: string) => [...customerKeys.orders(), id] as const,
-  wishlist: () => [...customerKeys.all, 'wishlist'] as const,
-  addresses: () => [...customerKeys.all, 'addresses'] as const,
-};
-
-// ─── Profile ──────────────────────────────────────────────────────────────────
-
-async function fetchProfile(): Promise<CustomerProfile> {
-  const res = await apiClient.get<{ success: boolean; customer: CustomerProfile }>('/customer/profile');
-  return res.customer;
+export interface CreateAddressPayload {
+  name: string;
+  street: string;
+  city: string;
+  state?: string;
+  country: string;
+  postalCode: string;
+  isDefault?: boolean;
 }
 
+// ─── Profile ────────────────────────────────────────────────────────────────
 export function useCustomerProfile() {
-  return useQuery({
-    queryKey: customerKeys.profile(),
-    queryFn: fetchProfile,
+  return useQuery<User>({
+    queryKey: customerKeys.profile,
+    queryFn: async () => {
+      const res = await apiClient.get<{ success: boolean; data: User }>('/customer/profile');
+      return res.data;
+    },
     staleTime: 5 * 60 * 1000,
   });
 }
 
 export function useUpdateProfile() {
-  const queryClient = useQueryClient();
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: (payload: UpdateProfilePayload) =>
-      apiClient.put<{ success: boolean; customer: CustomerProfile }>('/customer/profile', payload),
+      apiClient.put<{ success: boolean; data: User }>('/customer/profile', payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: customerKeys.profile() });
+      qc.invalidateQueries({ queryKey: customerKeys.profile });
     },
   });
 }
 
-// ─── Orders ───────────────────────────────────────────────────────────────────
-
-async function fetchOrders(): Promise<Order[]> {
-  const res = await apiClient.get<{ success: boolean; orders: Order[] }>('/customer/orders');
-  return res.orders;
-}
-
-async function fetchOrderDetail(orderId: string): Promise<Order> {
-  const res = await apiClient.get<{ success: boolean; order: Order }>(`/customer/orders/${orderId}`);
-  return res.order;
-}
-
+// ─── Orders ─────────────────────────────────────────────────────────────────
 export function useCustomerOrders() {
-  return useQuery({
-    queryKey: customerKeys.orders(),
-    queryFn: fetchOrders,
+  return useQuery<Order[]>({
+    queryKey: customerKeys.orders,
+    queryFn: async () => {
+      const res = await apiClient.get<{ success: boolean; data: Order[] }>('/customer/orders');
+      return res.data;
+    },
     staleTime: 2 * 60 * 1000,
   });
 }
 
-export function useOrderDetail(orderId: string) {
-  return useQuery({
+export function useCustomerOrder(orderId: string) {
+  return useQuery<Order>({
     queryKey: customerKeys.order(orderId),
-    queryFn: () => fetchOrderDetail(orderId),
+    queryFn: async () => {
+      const res = await apiClient.get<{ success: boolean; data: Order }>(
+        `/customer/orders/${orderId}`
+      );
+      return res.data;
+    },
     enabled: !!orderId,
   });
 }
 
-// ─── Wishlist ─────────────────────────────────────────────────────────────────
-
-async function fetchWishlist(): Promise<WishlistItem[]> {
-  const res = await apiClient.get<{ success: boolean; wishlist: WishlistItem[] }>('/customer/wishlist');
-  return res.wishlist;
-}
-
-export function useWishlist() {
-  return useQuery({
-    queryKey: customerKeys.wishlist(),
-    queryFn: fetchWishlist,
-    staleTime: 2 * 60 * 1000,
-  });
-}
-
-export function useAddToWishlist() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (productId: string) =>
-      apiClient.post<{ success: boolean }>('/customer/wishlist', { productId }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: customerKeys.wishlist() });
+// ─── Addresses ───────────────────────────────────────────────────────────────
+export function useCustomerAddresses() {
+  return useQuery<Address[]>({
+    queryKey: customerKeys.addresses,
+    queryFn: async () => {
+      const res = await apiClient.get<{ success: boolean; data: Address[] }>(
+        '/customer/addresses'
+      );
+      return res.data;
     },
-  });
-}
-
-export function useRemoveFromWishlist() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (wishlistItemId: string) =>
-      apiClient.delete<{ success: boolean }>(`/customer/wishlist/${wishlistItemId}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: customerKeys.wishlist() });
-    },
-  });
-}
-
-// ─── Addresses ────────────────────────────────────────────────────────────────
-
-async function fetchAddresses(): Promise<Address[]> {
-  const res = await apiClient.get<{ success: boolean; addresses: Address[] }>('/customer/addresses');
-  return res.addresses;
-}
-
-export function useAddresses() {
-  return useQuery({
-    queryKey: customerKeys.addresses(),
-    queryFn: fetchAddresses,
     staleTime: 5 * 60 * 1000,
   });
 }
 
 export function useAddAddress() {
-  const queryClient = useQueryClient();
+  const qc = useQueryClient();
   return useMutation({
-    mutationFn: (address: Omit<Address, 'id'>) =>
-      apiClient.post<{ success: boolean; address: Address }>('/customer/addresses', address),
+    mutationFn: (payload: CreateAddressPayload) =>
+      apiClient.post<{ success: boolean; data: Address }>('/customer/addresses', payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: customerKeys.addresses() });
-    },
-  });
-}
-
-export function useUpdateAddress() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, ...data }: Address) =>
-      apiClient.put<{ success: boolean; address: Address }>(`/customer/addresses/${id}`, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: customerKeys.addresses() });
+      qc.invalidateQueries({ queryKey: customerKeys.addresses });
     },
   });
 }
 
 export function useDeleteAddress() {
-  const queryClient = useQueryClient();
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: (addressId: string) =>
       apiClient.delete<{ success: boolean }>(`/customer/addresses/${addressId}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: customerKeys.addresses() });
+      qc.invalidateQueries({ queryKey: customerKeys.addresses });
+    },
+  });
+}
+
+export function useSetDefaultAddress() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (addressId: string) =>
+      apiClient.patch<{ success: boolean }>(`/customer/addresses/${addressId}/default`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: customerKeys.addresses });
+    },
+  });
+}
+
+// ─── Wishlist ────────────────────────────────────────────────────────────────
+export function useWishlist() {
+  return useQuery<WishlistItem[]>({
+    queryKey: customerKeys.wishlist,
+    queryFn: async () => {
+      const res = await apiClient.get<{ success: boolean; data: WishlistItem[] }>(
+        '/customer/wishlist'
+      );
+      return res.data;
+    },
+    staleTime: 2 * 60 * 1000,
+  });
+}
+
+export function useAddToWishlist() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (productId: string) =>
+      apiClient.post<{ success: boolean }>('/customer/wishlist', { productId }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: customerKeys.wishlist });
+    },
+  });
+}
+
+export function useRemoveFromWishlist() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (productId: string) =>
+      apiClient.delete<{ success: boolean }>(`/customer/wishlist/${productId}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: customerKeys.wishlist });
     },
   });
 }

@@ -1,10 +1,11 @@
 /**
  * API Client Configuration
- * Centralized API client with interceptors for auth, logging, and error handling
+ * Centralized API client with interceptors for auth, logging, and error handling.
+ * Tokens are stored in expo-secure-store (not AsyncStorage).
  */
 
 import { ApiConfig, logger, StorageKeys } from '@/src/config';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { secureStorage } from '@/src/storage';
 
 // Types
 interface RequestConfig extends RequestInit {
@@ -18,42 +19,35 @@ interface ApiError extends Error {
   data?: any;
 }
 
-// Token management
+// Token management — backed by expo-secure-store
 export const tokenManager = {
   async getToken(): Promise<string | null> {
-    try {
-      return await AsyncStorage.getItem(StorageKeys.authToken);
-    } catch {
-      return null;
-    }
+    return secureStorage.getItem(StorageKeys.authToken);
   },
 
   async setToken(token: string): Promise<void> {
-    await AsyncStorage.setItem(StorageKeys.authToken, token);
+    await secureStorage.setItem(StorageKeys.authToken, token);
   },
 
   async removeToken(): Promise<void> {
-    await AsyncStorage.removeItem(StorageKeys.authToken);
-    await AsyncStorage.removeItem(StorageKeys.refreshToken);
+    await secureStorage.removeItem(StorageKeys.authToken);
+    await secureStorage.removeItem(StorageKeys.refreshToken);
   },
 
   async getRefreshToken(): Promise<string | null> {
-    try {
-      return await AsyncStorage.getItem(StorageKeys.refreshToken);
-    } catch {
-      return null;
-    }
+    return secureStorage.getItem(StorageKeys.refreshToken);
   },
 
   async setRefreshToken(token: string): Promise<void> {
-    await AsyncStorage.setItem(StorageKeys.refreshToken, token);
+    await secureStorage.setItem(StorageKeys.refreshToken, token);
   },
 };
 
 // Build URL with query params
 function buildUrl(endpoint: string, params?: Record<string, string | number | boolean | undefined>): string {
-  const url = new URL(endpoint, ApiConfig.baseUrl);
-  
+  const base = ApiConfig.baseUrl.endsWith('/') ? ApiConfig.baseUrl.slice(0, -1) : ApiConfig.baseUrl;
+  const path = endpoint.startsWith('/') ? endpoint : '/' + endpoint;
+  const url = new URL(base + path);
   if (params) {
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
@@ -61,7 +55,6 @@ function buildUrl(endpoint: string, params?: Record<string, string | number | bo
       }
     });
   }
-  
   return url.toString();
 }
 
@@ -75,110 +68,78 @@ function createApiError(message: string, status?: number, data?: any): ApiError 
 
 // Main API client
 class ApiClient {
-  private async request<T>(
-    endpoint: string,
-    config: RequestConfig = {}
-  ): Promise<T> {
+  private async request<T>(endpoint: string, config: RequestConfig = {}): Promise<T> {
     const { params, timeout = ApiConfig.timeout, ...fetchConfig } = config;
-    
     const url = buildUrl(endpoint, params);
     const token = await tokenManager.getToken();
-    
-    const headers: HeadersInit = {
+
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      ...fetchConfig.headers,
+      Accept: 'application/json',
+      ...(fetchConfig.headers as Record<string, string>),
     };
-    
-    if (token) {
-      (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
-    }
-    
-    // Create abort controller for timeout
+
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
-    
+
     try {
-      // Log request in development
-      logger.log(`🌐 API Request: ${fetchConfig.method || 'GET'} ${url}`);
-      
+      logger.log(`🌐 ${fetchConfig.method || 'GET'} ${url}`);
+
       const response = await fetch(url, {
         ...fetchConfig,
         headers,
         signal: controller.signal,
       });
-      
+
       clearTimeout(timeoutId);
-      
-      // Log response in development
-      logger.log(`✅ API Response: ${response.status} ${url}`);
-      
-      // Handle non-OK responses
+      logger.log(`✅ ${response.status} ${url}`);
+
+      // 401 → clear token so auth context forces re-login
+      if (response.status === 401) {
+        await tokenManager.removeToken();
+      }
+
       if (!response.ok) {
-        let errorData;
-        try {
-          errorData = await response.json();
-        } catch {
-          errorData = { message: response.statusText };
-        }
-        
+        let errorData: any;
+        try { errorData = await response.json(); } catch { errorData = { message: response.statusText }; }
         throw createApiError(
-          errorData.message || `Request failed with status ${response.status}`,
+          errorData?.error?.message || errorData?.message || `Request failed with status ${response.status}`,
           response.status,
           errorData
         );
       }
-      
-      // Parse response
-      const data = await response.json();
-      return data;
-      
+
+      return (await response.json()) as T;
     } catch (error: any) {
       clearTimeout(timeoutId);
-      
-      if (error.name === 'AbortError') {
-        throw createApiError('Request timeout', 408);
-      }
-      
+      if (error.name === 'AbortError') throw createApiError('Request timeout', 408);
       logger.error(`❌ API Error: ${url}`, error);
-      
       throw error;
     }
   }
-  
-  // HTTP methods
+
   async get<T>(endpoint: string, params?: Record<string, any>): Promise<T> {
     return this.request<T>(endpoint, { method: 'GET', params });
   }
-  
+
   async post<T>(endpoint: string, data?: any, config?: RequestConfig): Promise<T> {
-    return this.request<T>(endpoint, {
-      method: 'POST',
-      body: data ? JSON.stringify(data) : undefined,
-      ...config,
-    });
+    return this.request<T>(endpoint, { method: 'POST', body: data ? JSON.stringify(data) : undefined, ...config });
   }
-  
+
   async put<T>(endpoint: string, data?: any): Promise<T> {
-    return this.request<T>(endpoint, {
-      method: 'PUT',
-      body: data ? JSON.stringify(data) : undefined,
-    });
+    return this.request<T>(endpoint, { method: 'PUT', body: data ? JSON.stringify(data) : undefined });
   }
-  
+
   async patch<T>(endpoint: string, data?: any): Promise<T> {
-    return this.request<T>(endpoint, {
-      method: 'PATCH',
-      body: data ? JSON.stringify(data) : undefined,
-    });
+    return this.request<T>(endpoint, { method: 'PATCH', body: data ? JSON.stringify(data) : undefined });
   }
-  
+
   async delete<T>(endpoint: string): Promise<T> {
     return this.request<T>(endpoint, { method: 'DELETE' });
   }
 }
 
-// Export singleton instance
 export const apiClient = new ApiClient();
-
 export default apiClient;

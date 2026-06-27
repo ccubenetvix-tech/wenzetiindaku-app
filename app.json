@@ -4,6 +4,9 @@
     "slug": "wenzetiindaku-app",
     "owner": "ccubenetvix-tech",
     "version": "1.0.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "wenzetiindakuapp",
@@ -11,7 +14,14 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.ccubenetvixtech.wenzetiindakuapp"
+      "bundleIdentifier": "com.ccubenetvixtech.wenzetiindakuapp",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Allow Wenze Tii Ndaku to access your camera to upload product images.",
+        "NSPhotoLibraryUsageDescription": "Allow Wenze Tii Ndaku to access your photos to upload a profile picture.",
+        "NSLocationWhenInUseUsageDescription": "Allow Wenze Tii Ndaku to use your location to show nearby stores and autofill your delivery address.",
+        "NSUserNotificationsUsageDescription": "We'll send you order updates and delivery notifications."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -22,7 +32,17 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.ccubenetvixtech.wenzetiindakuapp"
+      "package": "com.ccubenetvixtech.wenzetiindakuapp",
+      "versionCode": 1,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE",
+        "android.permission.POST_NOTIFICATIONS"
+      ]
     },
     "web": {
       "output": "static",
@@ -30,6 +50,16 @@
     },
     "plugins": [
       "expo-router",
+      "expo-secure-store",
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#0F2A4A",
+          "defaultChannel": "orders"
+        }
+      ],
       [
         "expo-splash-screen",
         {
