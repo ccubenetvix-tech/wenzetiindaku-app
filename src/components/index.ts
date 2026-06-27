@@ -1,16 +1,13 @@
 /**
- * Components Index
- * Re-export all components for easy importing
+ * Shared component exports
  */
-
-export { CategoryCard } from './CategoryCard';
-export { CheckoutStepper } from './CheckoutStepper';
-export { EmptyState, ErrorState } from './ErrorState';
-export { Header } from './Header';
-export { HeroBanner } from './HeroBanner';
-export { OrderSummaryCard } from './OrderSummaryCard';
-export { ProductCard } from './ProductCard';
-export { SectionHeader } from './SectionHeader';
-export { CategoryCardSkeleton, HeroBannerSkeleton, ProductCardSkeleton, Skeleton, StoreCardSkeleton } from './Skeleton';
-export { StoreCard } from './StoreCard';
-
+export { default as CategoryCard } from './CategoryCard';
+export { ErrorBoundary } from './ErrorBoundary';
+export { default as ErrorState } from './ErrorState';
+export { default as Header } from './Header';
+export { default as HeroBanner } from './HeroBanner';
+export { default as OrderSummaryCard } from './OrderSummaryCard';
+export { default as ProductCard } from './ProductCard';
+export { default as SectionHeader } from './SectionHeader';
+export { default as Skeleton } from './Skeleton';
+export { default as StoreCard } from './StoreCard';

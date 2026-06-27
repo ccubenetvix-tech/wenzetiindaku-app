@@ -2,10 +2,11 @@
  * Auth Context
  * Handles email/password + Google OAuth.
  * Email login is wired to the real backend /api/auth/login.
- * Tokens stored in AsyncStorage (upgrade to expo-secure-store before production).
+ * Tokens stored in expo-secure-store (production-safe).
  */
 
 import { ApiConfig, logger, StorageKeys } from '@/src/config';
+import { secureStorage } from '@/src/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
@@ -38,7 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [request, response, promptAsync] = Google.useAuthRequest({
+  const [, response, promptAsync] = Google.useAuthRequest({
     clientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID || '',
     iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || '',
     androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || '',
@@ -49,9 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (response?.type === 'success') {
       const { authentication } = response;
-      if (authentication?.accessToken) {
-        handleGoogleAccessToken(authentication.accessToken);
-      }
+      if (authentication?.accessToken) handleGoogleAccessToken(authentication.accessToken);
     } else if (response?.type === 'error') {
       setError('Google sign in failed. Please try again.');
     }
@@ -59,6 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadStoredUser = async () => {
     try {
+      // Non-sensitive user profile stays in AsyncStorage
       const storedUser = await AsyncStorage.getItem(StorageKeys.user);
       if (storedUser) setUser(JSON.parse(storedUser));
     } catch (e) {
@@ -68,15 +68,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  /**
-   * Called after Google OAuth succeeds.
-   * Sends the Google access token to our backend to create/login the user
-   * and receive a JWT. Falls back to storing the Google token directly.
-   */
   const handleGoogleAccessToken = async (accessToken: string) => {
     try {
       setIsLoading(true);
-      // Exchange Google token for our backend JWT
       const res = await fetch(`${ApiConfig.baseUrl}/auth/google/mobile`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -88,24 +82,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const userData: User = {
           id: data.user.id,
           email: data.user.email,
-          name: data.user.name || data.user.first_name + ' ' + data.user.last_name,
+          name: data.user.name || `${data.user.first_name} ${data.user.last_name}`.trim(),
           picture: data.user.picture,
           role: data.user.role,
         };
         await AsyncStorage.setItem(StorageKeys.user, JSON.stringify(userData));
-        await AsyncStorage.setItem(StorageKeys.authToken, data.token);
-        if (data.refreshToken) {
-          await AsyncStorage.setItem(StorageKeys.refreshToken, data.refreshToken);
-        }
+        // Tokens → secure store
+        await secureStorage.setItem(StorageKeys.authToken, data.token);
+        if (data.refreshToken) await secureStorage.setItem(StorageKeys.refreshToken, data.refreshToken);
         setUser(userData);
         setError(null);
         return;
       }
     } catch (e) {
-      logger.warn('Backend Google exchange failed, falling back to direct Google user info');
+      logger.warn('Backend Google exchange failed, falling back to Google userinfo');
     }
 
-    // Fallback: fetch user info directly from Google
     try {
       const googleRes = await fetch('https://www.googleapis.com/userinfo/v2/me', {
         headers: { Authorization: `Bearer ${accessToken}` },
@@ -118,7 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         picture: userInfo.picture,
       };
       await AsyncStorage.setItem(StorageKeys.user, JSON.stringify(userData));
-      await AsyncStorage.setItem(StorageKeys.authToken, accessToken);
+      await secureStorage.setItem(StorageKeys.authToken, accessToken);
       setUser(userData);
       setError(null);
     } catch (e) {
@@ -129,14 +121,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  /**
-   * Email/password login - wired to real backend /api/auth/login
-   */
   const signInWithEmail = async (email: string, password: string) => {
     try {
       setIsLoading(true);
       setError(null);
-
       if (!email || !password) throw new Error('Please enter email and password');
 
       const res = await fetch(`${ApiConfig.baseUrl}/auth/login`, {
@@ -146,10 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.message || 'Sign in failed. Please try again.');
-      }
+      if (!res.ok) throw new Error(data.message || 'Sign in failed. Please try again.');
 
       const userData: User = {
         id: data.user.id,
@@ -160,10 +145,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       };
 
       await AsyncStorage.setItem(StorageKeys.user, JSON.stringify(userData));
-      await AsyncStorage.setItem(StorageKeys.authToken, data.token);
-      if (data.refreshToken) {
-        await AsyncStorage.setItem(StorageKeys.refreshToken, data.refreshToken);
-      }
+      // Tokens → secure store
+      await secureStorage.setItem(StorageKeys.authToken, data.token);
+      if (data.refreshToken) await secureStorage.setItem(StorageKeys.refreshToken, data.refreshToken);
       setUser(userData);
     } catch (e: any) {
       setError(e.message || 'Sign in failed. Please try again.');
@@ -186,11 +170,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     try {
       setIsLoading(true);
-      await AsyncStorage.multiRemove([
-        StorageKeys.user,
-        StorageKeys.authToken,
-        StorageKeys.refreshToken,
-      ]);
+      // Remove non-sensitive data from AsyncStorage
+      await AsyncStorage.removeItem(StorageKeys.user);
+      await AsyncStorage.removeItem(StorageKeys.cart);
+      // Remove sensitive tokens from secure store
+      await secureStorage.multiRemove([StorageKeys.authToken, StorageKeys.refreshToken]);
       setUser(null);
     } catch (e) {
       logger.error('Failed to sign out:', e);
