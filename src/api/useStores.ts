@@ -1,5 +1,6 @@
 /**
- * React Query Hooks for Stores
+ * React Query Hooks for Stores (Vendors)
+ * Vendors are served from /api/products/vendors on the backend.
  * USE_MOCK is driven by EXPO_PUBLIC_ENABLE_MOCK_DATA env var.
  */
 
@@ -7,7 +8,7 @@ import { FeatureFlags } from '@/src/config';
 import { useQuery } from '@tanstack/react-query';
 import apiClient from './client';
 import { mockStores, simulateDelay } from './mockData';
-import { ApiResponse, Store } from './types';
+import { Store } from './types';
 
 export const storeKeys = {
   all: ['stores'] as const,
@@ -20,16 +21,52 @@ export const storeKeys = {
 
 const USE_MOCK = FeatureFlags.enableMockData;
 
+// Backend response shapes
+interface VendorsApiResponse {
+  success: boolean;
+  data: {
+    vendors: any[];
+    pagination: object;
+  };
+}
+
+interface VendorApiResponse {
+  success: boolean;
+  data: {
+    vendor: any;
+  };
+}
+
+// Map backend vendor shape → app Store type
+function mapVendorToStore(v: any): Store {
+  return {
+    id: v.id,
+    name: v.business_name,
+    slug: v.business_name?.toLowerCase().replace(/\s+/g, '-') ?? v.id,
+    description: v.description,
+    logo: v.profile_photo ?? v.logo,
+    coverImage: v.cover_image,
+    city: v.city ?? '',
+    country: v.country ?? '',
+    productCount: v.product_count ?? 0,
+    rating: v.rating ?? 0,
+    reviewCount: v.review_count ?? 0,
+    categories: v.categories ?? [],
+    verified: v.verified ?? false,
+    createdAt: v.created_at,
+  };
+}
+
 async function fetchStores(): Promise<Store[]> {
   if (USE_MOCK) { await simulateDelay(300); return mockStores; }
-  const response = await apiClient.get<ApiResponse<Store[]>>('/stores');
-  return response.data;
+  const response = await apiClient.get<VendorsApiResponse>('/products/vendors');
+  return (response.data?.vendors ?? []).map(mapVendorToStore);
 }
 
 async function fetchTopStores(): Promise<Store[]> {
   if (USE_MOCK) { await simulateDelay(300); return mockStores.slice(0, 5); }
-  const response = await apiClient.get<ApiResponse<Store[]>>('/stores', { top: true, limit: 5 });
-  return response.data;
+  const response = await apiClient.get<VendorsApiResponse>('/products/vendors', { limit: 5 });
+  return (response.data?.vendors ?? []).map(mapVendorToStore);
 }
 
 async function fetchStore(id: string): Promise<Store> {
@@ -39,8 +76,8 @@ async function fetchStore(id: string): Promise<Store> {
     if (!store) throw new Error('Store not found');
     return store;
   }
-  const response = await apiClient.get<ApiResponse<Store>>(`/stores/${id}`);
-  return response.data;
+  const response = await apiClient.get<VendorApiResponse>(`/products/vendors/${id}`);
+  return mapVendorToStore(response.data?.vendor);
 }
 
 export function useStores() {

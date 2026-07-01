@@ -7,9 +7,8 @@ import { FeatureFlags } from '@/src/config';
 import { useQuery } from '@tanstack/react-query';
 import apiClient from './client';
 import { mockProducts, simulateDelay } from './mockData';
-import { ApiResponse, Product, ProductFilters } from './types';
+import { Product, ProductFilters } from './types';
 
-// Query keys
 export const productKeys = {
   all: ['products'] as const,
   lists: () => [...productKeys.all, 'list'] as const,
@@ -21,19 +20,55 @@ export const productKeys = {
   byStore: (storeId: string) => [...productKeys.all, 'store', storeId] as const,
 };
 
-// Reads from env — set EXPO_PUBLIC_ENABLE_MOCK_DATA=false in .env.local for production
 const USE_MOCK = FeatureFlags.enableMockData;
+
+// Backend response shapes
+interface ProductsApiResponse {
+  success: boolean;
+  data: {
+    products: any[];
+    pagination?: object;
+  };
+}
+
+interface ProductApiResponse {
+  success: boolean;
+  data: {
+    product: any;
+  };
+}
+
+// Map backend product shape → app Product type
+function mapProduct(p: any): Product {
+  return {
+    id: p.id,
+    name: p.name,
+    slug: p.slug ?? p.name?.toLowerCase().replace(/\s+/g, '-') ?? p.id,
+    description: p.description ?? '',
+    price: p.price ?? 0,
+    compareAtPrice: p.compare_at_price,
+    currency: p.currency ?? 'USD',
+    images: p.images ?? (p.image_url ? [p.image_url] : []),
+    primaryImage: p.images?.[0] ?? p.image_url ?? '',
+    categoryId: p.category ?? '',
+    storeId: p.vendor_id ?? '',
+    rating: p.rating ?? 0,
+    reviewCount: p.review_count ?? 0,
+    inStock: (p.stock ?? p.quantity ?? 1) > 0,
+    quantity: p.stock ?? p.quantity ?? 0,
+    tags: p.tags,
+    createdAt: p.created_at,
+    updatedAt: p.updated_at,
+  };
+}
 
 async function fetchFeaturedProducts(): Promise<Product[]> {
   if (USE_MOCK) {
     await simulateDelay(400);
     return mockProducts;
   }
-  const response = await apiClient.get<ApiResponse<Product[]>>('/products', {
-    featured: true,
-    limit: 10,
-  });
-  return response.data;
+  const response = await apiClient.get<ProductsApiResponse>('/products/featured', { limit: 10 });
+  return (response.data?.products ?? []).map(mapProduct);
 }
 
 async function fetchProducts(filters: ProductFilters): Promise<Product[]> {
@@ -45,9 +80,7 @@ async function fetchProducts(filters: ProductFilters): Promise<Product[]> {
     if (filters.search) {
       const search = filters.search.toLowerCase();
       filtered = filtered.filter(
-        p =>
-          p.name.toLowerCase().includes(search) ||
-          p.description.toLowerCase().includes(search)
+        p => p.name.toLowerCase().includes(search) || p.description.toLowerCase().includes(search)
       );
     }
     if (filters.minPrice) filtered = filtered.filter(p => p.price >= filters.minPrice!);
@@ -62,8 +95,17 @@ async function fetchProducts(filters: ProductFilters): Promise<Product[]> {
     }
     return filtered;
   }
-  const response = await apiClient.get<ApiResponse<Product[]>>('/products', filters as any);
-  return response.data;
+  // Map app filter keys → backend query param names
+  const params: Record<string, any> = {};
+  if (filters.search) params.search = filters.search;
+  if (filters.categoryId) params.category = filters.categoryId;
+  if (filters.storeId) params.vendor_id = filters.storeId;
+  if (filters.minPrice !== undefined) params.minPrice = filters.minPrice;
+  if (filters.maxPrice !== undefined) params.maxPrice = filters.maxPrice;
+  if (filters.sortBy) params.sortBy = filters.sortBy;
+
+  const response = await apiClient.get<ProductsApiResponse>('/products', params);
+  return (response.data?.products ?? []).map(mapProduct);
 }
 
 async function fetchProduct(id: string): Promise<Product> {
@@ -73,8 +115,8 @@ async function fetchProduct(id: string): Promise<Product> {
     if (!product) throw new Error('Product not found');
     return product;
   }
-  const response = await apiClient.get<ApiResponse<Product>>(`/products/${id}`);
-  return response.data;
+  const response = await apiClient.get<ProductApiResponse>(`/products/${id}`);
+  return mapProduct(response.data?.product);
 }
 
 async function fetchProductsByCategory(categoryId: string): Promise<Product[]> {
@@ -82,8 +124,8 @@ async function fetchProductsByCategory(categoryId: string): Promise<Product[]> {
     await simulateDelay(300);
     return mockProducts.filter(p => p.categoryId === categoryId);
   }
-  const response = await apiClient.get<ApiResponse<Product[]>>('/products', { categoryId });
-  return response.data;
+  const response = await apiClient.get<ProductsApiResponse>('/products', { category: categoryId });
+  return (response.data?.products ?? []).map(mapProduct);
 }
 
 async function fetchProductsByStore(storeId: string): Promise<Product[]> {
@@ -91,8 +133,8 @@ async function fetchProductsByStore(storeId: string): Promise<Product[]> {
     await simulateDelay(300);
     return mockProducts.filter(p => p.storeId === storeId);
   }
-  const response = await apiClient.get<ApiResponse<Product[]>>(`/stores/${storeId}/products`);
-  return response.data;
+  const response = await apiClient.get<ProductsApiResponse>('/products', { vendor_id: storeId });
+  return (response.data?.products ?? []).map(mapProduct);
 }
 
 export function useFeaturedProducts() {

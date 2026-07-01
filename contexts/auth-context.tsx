@@ -58,7 +58,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadStoredUser = async () => {
     try {
-      // Non-sensitive user profile stays in AsyncStorage
       const storedUser = await AsyncStorage.getItem(StorageKeys.user);
       if (storedUser) setUser(JSON.parse(storedUser));
     } catch (e) {
@@ -78,18 +77,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (res.ok) {
-        const data = await res.json();
+        const json = await res.json();
+        // Backend: { success: true, data: { user, token, refreshToken } }
+        const payload = json.data ?? json;
         const userData: User = {
-          id: data.user.id,
-          email: data.user.email,
-          name: data.user.name || `${data.user.first_name} ${data.user.last_name}`.trim(),
-          picture: data.user.picture,
-          role: data.user.role,
+          id: payload.user.id,
+          email: payload.user.email,
+          name: payload.user.name || `${payload.user.first_name ?? ''} ${payload.user.last_name ?? ''}`.trim(),
+          picture: payload.user.picture,
+          role: payload.user.role,
         };
         await AsyncStorage.setItem(StorageKeys.user, JSON.stringify(userData));
-        // Tokens → secure store
-        await secureStorage.setItem(StorageKeys.authToken, data.token);
-        if (data.refreshToken) await secureStorage.setItem(StorageKeys.refreshToken, data.refreshToken);
+        await secureStorage.setItem(StorageKeys.authToken, payload.token);
+        if (payload.refreshToken) await secureStorage.setItem(StorageKeys.refreshToken, payload.refreshToken);
         setUser(userData);
         setError(null);
         return;
@@ -133,21 +133,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Sign in failed. Please try again.');
+      const json = await res.json();
 
+      if (!res.ok) {
+        // Backend error shape: { success: false, error: { message: '...' } } or { message: '...' }
+        const msg = json?.error?.message ?? json?.message ?? 'Sign in failed. Please try again.';
+        throw new Error(msg);
+      }
+
+      // Backend success shape: { success: true, data: { user, token, refreshToken } }
+      const payload = json.data ?? json;
       const userData: User = {
-        id: data.user.id,
-        email: data.user.email,
-        name: data.user.name || `${data.user.first_name} ${data.user.last_name}`.trim(),
-        picture: data.user.picture,
-        role: data.user.role,
+        id: payload.user.id,
+        email: payload.user.email,
+        name: payload.user.name || `${payload.user.first_name ?? ''} ${payload.user.last_name ?? ''}`.trim(),
+        picture: payload.user.picture,
+        role: payload.user.role,
       };
 
       await AsyncStorage.setItem(StorageKeys.user, JSON.stringify(userData));
-      // Tokens → secure store
-      await secureStorage.setItem(StorageKeys.authToken, data.token);
-      if (data.refreshToken) await secureStorage.setItem(StorageKeys.refreshToken, data.refreshToken);
+      await secureStorage.setItem(StorageKeys.authToken, payload.token);
+      if (payload.refreshToken) await secureStorage.setItem(StorageKeys.refreshToken, payload.refreshToken);
       setUser(userData);
     } catch (e: any) {
       setError(e.message || 'Sign in failed. Please try again.');
@@ -170,10 +176,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     try {
       setIsLoading(true);
-      // Remove non-sensitive data from AsyncStorage
       await AsyncStorage.removeItem(StorageKeys.user);
       await AsyncStorage.removeItem(StorageKeys.cart);
-      // Remove sensitive tokens from secure store
       await secureStorage.multiRemove([StorageKeys.authToken, StorageKeys.refreshToken]);
       setUser(null);
     } catch (e) {

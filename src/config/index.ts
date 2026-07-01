@@ -12,8 +12,8 @@ const getEnvironment = (): 'development' | 'staging' | 'production' => {
 };
 
 export const ApiConfig = {
-  baseUrl: process.env.EXPO_PUBLIC_API_BASE_URL || 'https://api.wenzetiindaku.com/v1',
-  timeout: parseInt(process.env.EXPO_PUBLIC_API_TIMEOUT || '30000', 10),
+  baseUrl: process.env.EXPO_PUBLIC_API_BASE_URL || 'https://wenzetiindaku-backend.onrender.com/api',
+  timeout: parseInt(process.env.EXPO_PUBLIC_API_TIMEOUT || '10000', 10),
   retryAttempts: 3,
 } as const;
 
@@ -29,7 +29,7 @@ export const AppConfig = {
   appName: 'Wenze Tii Ndaku',
   version: '1.0.0',
   buildNumber: process.env.EXPO_PUBLIC_BUILD_NUMBER || '1',
-  sentryDsn: process.env.EXPO_PUBLIC_SENTRY_DSN || '',
+  // Sentry replaced by Firebase Crashlytics — no DSN needed here
 } as const;
 
 export const StorageKeys = {
