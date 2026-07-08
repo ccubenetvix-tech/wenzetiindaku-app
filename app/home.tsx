@@ -1,4 +1,4 @@
-import Colors from '@/constants/colors';
+import { Colors } from '@/constants/colors';
 import { useAuth } from '@/contexts/auth-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 
 export default function HomeScreen() {
-  const { user, signOut, isLoading } = useAuth();
+  const { user, signOut } = useAuth();
   const router = useRouter();
 
   const handleSignOut = async () => {
@@ -58,7 +58,7 @@ export default function HomeScreen() {
           <Ionicons name="construct-outline" size={80} color={Colors.gray[300]} />
           <Text style={styles.emptyTitle}>Coming Soon</Text>
           <Text style={styles.emptySubtitle}>
-            We're building something amazing for you.{'\n'}
+            We&apos;re building something amazing for you.{'\n'}
             Stay tuned for exciting features!
           </Text>
         </View>

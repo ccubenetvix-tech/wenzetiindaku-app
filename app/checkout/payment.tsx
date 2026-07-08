@@ -3,7 +3,7 @@
  * Step 2: Select payment method and enter payment details
  */
 
-import { useCreatePaymentIntent, usePaymentMethods } from '@/src/api/checkoutApi';
+import { useCreatePaymentIntent } from '@/src/api/checkoutApi';
 import { MOBILE_MONEY_PROVIDERS, PaymentMethod } from '@/src/api/checkoutTypes';
 import { useCheckoutStore } from '@/src/api/useCheckout';
 import { CheckoutStepper } from '@/src/components/CheckoutStepper';
@@ -82,11 +82,11 @@ export default function PaymentScreen() {
     if (fetchedMethods) {
       setPaymentMethods(fetchedMethods);
     }
-  }, [fetchedMethods]);
+  }, [fetchedMethods, setPaymentMethods]);
 
   useEffect(() => {
     setStep('payment');
-  }, []);
+  }, [setStep]);
 
   // Redirect if missing prerequisites
   if (!orderSummary || cartItems.length === 0) {
@@ -433,7 +433,7 @@ export default function PaymentScreen() {
             <Ionicons name="card" size={24} color={Colors.primary} />
             <View style={styles.stepHeaderText}>
               <Text style={styles.stepTitle}>Payment Method</Text>
-              <Text style={styles.stepSubtitle}>Choose how you'd like to pay</Text>
+              <Text style={styles.stepSubtitle}>Choose how you&apos;d like to pay</Text>
             </View>
           </View>
 

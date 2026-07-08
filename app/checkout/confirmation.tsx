@@ -43,7 +43,7 @@ export default function ConfirmationScreen() {
       friction: 7,
       useNativeDriver: true,
     }).start();
-  }, []);
+  }, [clearCart, scaleAnim]);
 
   // Redirect if no order confirmation
   if (!orderConfirmation) {
@@ -184,7 +184,7 @@ export default function ConfirmationScreen() {
               <View style={styles.timelineContent}>
                 <Text style={styles.timelineTitlePending}>Shipping</Text>
                 <Text style={styles.timelineDatePending}>
-                  We'll notify you when shipped
+                  We&apos;ll notify you when shipped
                 </Text>
               </View>
             </View>
@@ -248,7 +248,7 @@ export default function ConfirmationScreen() {
 
         {/* What's Next */}
         <View style={styles.nextStepsCard}>
-          <Text style={styles.nextStepsTitle}>What's Next?</Text>
+          <Text style={styles.nextStepsTitle}>What&apos;s Next?</Text>
           <View style={styles.nextStepsList}>
             <View style={styles.nextStepItem}>
               <View style={styles.nextStepNumber}>
@@ -257,7 +257,7 @@ export default function ConfirmationScreen() {
               <View style={styles.nextStepContent}>
                 <Text style={styles.nextStepItemTitle}>Order Confirmation Email</Text>
                 <Text style={styles.nextStepItemDescription}>
-                  We've sent a confirmation to {shippingAddress?.email}
+                  We&apos;ve sent a confirmation to {shippingAddress?.email}
                 </Text>
               </View>
             </View>
@@ -268,7 +268,7 @@ export default function ConfirmationScreen() {
               <View style={styles.nextStepContent}>
                 <Text style={styles.nextStepItemTitle}>Shipping Updates</Text>
                 <Text style={styles.nextStepItemDescription}>
-                  You'll receive SMS & email updates when your order ships
+                  You&apos;ll receive SMS & email updates when your order ships
                 </Text>
               </View>
             </View>

@@ -2,6 +2,7 @@
  * API Client Configuration
  * Centralized API client with interceptors for auth, logging, and error handling.
  * Tokens are stored in expo-secure-store (not AsyncStorage).
+ * Includes request deduplication for GET requests to prevent rate limiting.
  */
 
 import { ApiConfig, logger, StorageKeys } from '@/src/config';
@@ -66,11 +67,23 @@ function createApiError(message: string, status?: number, data?: any): ApiError 
   return error;
 }
 
-// Main API client
+// Main API client with request deduplication
 class ApiClient {
+  private inFlightRequests = new Map<string, Promise<any>>();
+
   private async request<T>(endpoint: string, config: RequestConfig = {}): Promise<T> {
     const { params, timeout = ApiConfig.timeout, ...fetchConfig } = config;
     const url = buildUrl(endpoint, params);
+
+    // Deduplicate GET requests only (safe for idempotent operations)
+    if (fetchConfig.method === 'GET' || !fetchConfig.method) {
+      const existingRequest = this.inFlightRequests.get(url);
+      if (existingRequest) {
+        logger.log(`♻️  Reusing in-flight request: ${url}`);
+        return existingRequest;
+      }
+    }
+
     const token = await tokenManager.getToken();
 
     const headers: Record<string, string> = {
@@ -84,40 +97,52 @@ class ApiClient {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-    try {
-      logger.log(`🌐 ${fetchConfig.method || 'GET'} ${url}`);
+    const requestPromise = (async () => {
+      try {
+        logger.log(`🌐 ${fetchConfig.method || 'GET'} ${url}`);
 
-      const response = await fetch(url, {
-        ...fetchConfig,
-        headers,
-        signal: controller.signal,
-      });
+        const response = await fetch(url, {
+          ...fetchConfig,
+          headers,
+          signal: controller.signal,
+        });
 
-      clearTimeout(timeoutId);
-      logger.log(`✅ ${response.status} ${url}`);
+        clearTimeout(timeoutId);
+        logger.log(`✅ ${response.status} ${url}`);
 
-      // 401 → clear token so auth context forces re-login
-      if (response.status === 401) {
-        await tokenManager.removeToken();
+        // 401 → clear token so auth context forces re-login
+        if (response.status === 401) {
+          await tokenManager.removeToken();
+        }
+
+        if (!response.ok) {
+          let errorData: any;
+          try { errorData = await response.json(); } catch { errorData = { message: response.statusText }; }
+          throw createApiError(
+            errorData?.error?.message || errorData?.message || `Request failed with status ${response.status}`,
+            response.status,
+            errorData
+          );
+        }
+
+        return (await response.json()) as T;
+      } catch (error: any) {
+        clearTimeout(timeoutId);
+        if (error.name === 'AbortError') throw createApiError('Request timeout', 408);
+        logger.error(`❌ API Error: ${url}`, error);
+        throw error;
+      } finally {
+        // Clean up in-flight request after completion or error
+        this.inFlightRequests.delete(url);
       }
+    })();
 
-      if (!response.ok) {
-        let errorData: any;
-        try { errorData = await response.json(); } catch { errorData = { message: response.statusText }; }
-        throw createApiError(
-          errorData?.error?.message || errorData?.message || `Request failed with status ${response.status}`,
-          response.status,
-          errorData
-        );
-      }
-
-      return (await response.json()) as T;
-    } catch (error: any) {
-      clearTimeout(timeoutId);
-      if (error.name === 'AbortError') throw createApiError('Request timeout', 408);
-      logger.error(`❌ API Error: ${url}`, error);
-      throw error;
+    // Store the promise for GET requests only
+    if (fetchConfig.method === 'GET' || !fetchConfig.method) {
+      this.inFlightRequests.set(url, requestPromise);
     }
+
+    return requestPromise;
   }
 
   async get<T>(endpoint: string, params?: Record<string, any>): Promise<T> {

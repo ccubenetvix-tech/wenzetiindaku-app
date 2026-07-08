@@ -21,12 +21,12 @@ import {
   View,
 } from 'react-native';
 
-const { width } = Dimensions.get('window');
+Dimensions.get('window');
 const WenzeLogo = require('@/assets/images/splash-icon.png');
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { signInWithEmail, signInWithGoogle, isLoading, error } = useAuth();
+  const { signInWithEmail, signInWithGoogle, isLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -190,7 +190,7 @@ export default function LoginScreen() {
 
           {/* Sign Up Link */}
           <View style={styles.signUpContainer}>
-            <Text style={styles.signUpText}>Don't have an account? </Text>
+            <Text style={styles.signUpText}>Don&apos;t have an account? </Text>
             <TouchableOpacity onPress={handleSignUp}>
               <Text style={styles.signUpLink}>Sign up here</Text>
             </TouchableOpacity>

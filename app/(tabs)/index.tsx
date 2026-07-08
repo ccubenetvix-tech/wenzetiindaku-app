@@ -9,6 +9,7 @@ import {
     useTopStores,
 } from '@/src/api';
 import {
+    BackendStatusBanner,
     CategoryCard,
     CategoryCardSkeleton,
     ErrorState,
@@ -22,7 +23,7 @@ import {
 } from '@/src/components';
 import { Colors, Spacing } from '@/src/theme';
 import { useRouter } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
     FlatList,
     RefreshControl,
@@ -59,6 +60,23 @@ export default function HomeScreen() {
     refetch: refetchStores,
   } = useTopStores();
 
+  // Detect backend status from errors
+  const backendStatus = useMemo(() => {
+    const errors = [categoriesError, productsError, storesError].filter(Boolean) as any[];
+    if (errors.length === 0) return null;
+    
+    // Check if any errors are 503 (cold start)
+    const has503 = errors.some(err => err?.status === 503);
+    if (has503) return { status: 'warming' as const };
+    
+    // Check if any errors are 429 (rate limited)
+    const has429 = errors.some(err => err?.status === 429);
+    if (has429) return { status: 'rate-limited' as const };
+    
+    // Other errors
+    return { status: 'error' as const };
+  }, [categoriesError, productsError, storesError]);
+
   // Pull to refresh
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -68,7 +86,7 @@ export default function HomeScreen() {
       refetchStores(),
     ]);
     setRefreshing(false);
-  }, []);
+  }, [refetchCategories, refetchProducts, refetchStores]);
 
   // Search submit
   const handleSearchSubmit = () => {
@@ -104,6 +122,11 @@ export default function HomeScreen() {
           />
         }
       >
+        {/* Backend Status Banner */}
+        {backendStatus && (
+          <BackendStatusBanner status={backendStatus.status} />
+        )}
+
         {/* Hero Banner */}
         <HeroBanner />
 
