@@ -157,7 +157,7 @@ export default function VerifyOTPScreen() {
           </TouchableOpacity>
 
           <View style={styles.resendRow}>
-            <Text style={styles.resendLabel}>Didn't receive the code? </Text>
+            <Text style={styles.resendLabel}>Didn&apos;t receive the code? </Text>
             {countdown > 0 ? (
               <Text style={styles.countdown}>Resend in {countdown}s</Text>
             ) : (

@@ -87,7 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const handleGoogleAccessToken = async (accessToken: string) => {
     try {
       setIsLoading(true);
-      const res = await fetch(`${ApiConfig.baseUrl}/auth/google/mobile`, {
+      const res = await fetch(`${ApiConfig.baseUrl}/auth/google/verify-token`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ accessToken }),

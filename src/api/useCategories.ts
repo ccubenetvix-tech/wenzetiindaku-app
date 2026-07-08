@@ -1,14 +1,12 @@
 /**
  * React Query Hooks for Categories
- * Backend returns string[] of category names from /api/categories.
- * Mapped to Category objects for app compatibility.
- * USE_MOCK is driven by EXPO_PUBLIC_ENABLE_MOCK_DATA env var.
+ * Wires to real backend endpoints:
+ * - GET /categories → list of category names (string[])
+ * Maps backend category names to Category objects for app compatibility.
  */
 
-import { FeatureFlags } from '@/src/config';
 import { useQuery } from '@tanstack/react-query';
 import apiClient from './client';
-import { mockCategories, simulateDelay } from './mockData';
 import { Category } from './types';
 
 export const categoryKeys = {
@@ -18,8 +16,6 @@ export const categoryKeys = {
   details: () => [...categoryKeys.all, 'detail'] as const,
   detail: (id: string) => [...categoryKeys.details(), id] as const,
 };
-
-const USE_MOCK = FeatureFlags.enableMockData;
 
 // Backend returns { success: true, data: string[] }
 interface CategoriesApiResponse {
@@ -39,7 +35,6 @@ function mapStringToCategory(name: string, index: number): Category {
 }
 
 async function fetchCategories(): Promise<Category[]> {
-  if (USE_MOCK) { await simulateDelay(300); return mockCategories; }
   const response = await apiClient.get<CategoriesApiResponse>('/categories');
   const raw = response.data ?? [];
   // Handle both string[] (backend) and Category[] (future)
@@ -49,12 +44,6 @@ async function fetchCategories(): Promise<Category[]> {
 }
 
 async function fetchCategory(id: string): Promise<Category> {
-  if (USE_MOCK) {
-    await simulateDelay(200);
-    const category = mockCategories.find(c => c.id === id);
-    if (!category) throw new Error('Category not found');
-    return category;
-  }
   // Backend has no single-category endpoint — derive from list
   const categories = await fetchCategories();
   const found = categories.find(c => c.id === id || c.slug === id);

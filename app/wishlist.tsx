@@ -3,7 +3,7 @@
  * Fetches wishlist from real backend: GET /api/customer/wishlist
  */
 
-import { useAddToCart } from '@/src/api/useCart';
+import { useSyncedCart } from '@/src/api/useCart';
 import { useRemoveFromWishlist, useWishlist } from '@/src/api/useCustomer';
 import { Header } from '@/src/components';
 import { BorderRadius, Colors, FontSize, FontWeight, Shadow, Spacing } from '@/src/theme';
@@ -25,7 +25,7 @@ export default function WishlistScreen() {
   const router = useRouter();
   const { data: wishlist, isLoading, isError, refetch } = useWishlist();
   const removeFromWishlist = useRemoveFromWishlist();
-  const addToCart = useAddToCart();
+  const { add: addToCart } = useSyncedCart();
 
   const handleRemove = (productId: string) => {
     removeFromWishlist.mutate(productId);
@@ -36,10 +36,24 @@ export default function WishlistScreen() {
       id: item.productId,
       name: item.product.name,
       price: item.product.price,
-      image: item.product.primaryImage,
+      primaryImage: item.product.primaryImage,
+      categoryId: '',
       storeId: '',
-      storeName: item.product.store?.name || '',
-    });
+      slug: item.product.name.toLowerCase().replace(/\s+/g, '-'),
+      description: '',
+      compareAtPrice: undefined,
+      currency: 'USD',
+      images: [item.product.primaryImage],
+      category: undefined,
+      store: undefined,
+      rating: item.product.rating || 0,
+      reviewCount: 0,
+      inStock: item.product.inStock,
+      quantity: 1,
+      tags: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    } as any);
   };
 
   const renderItem = ({ item }: { item: any }) => (

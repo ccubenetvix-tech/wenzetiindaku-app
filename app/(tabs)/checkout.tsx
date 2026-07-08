@@ -3,7 +3,7 @@ import React from 'react';
 import { View, Text, Button } from 'react-native';
 import { useCheckoutStore, calculateOrderSummary } from '@/src/api/useCheckout';
 import { useSyncedCart } from '@/src/api/useCart';
-import { useCreateOrder, useVerifyPayment } from '@/src/api/useCustomer';
+import { useCreateOrder } from '@/src/api/useCustomer';
 
 export default function CheckoutScreen() {
   const {
@@ -14,15 +14,12 @@ export default function CheckoutScreen() {
     setLoading,
     setError,
     resetCheckout,
-    orderSummary,
     currentStep,
     canProceedToPayment,
-    canProceedToReview,
   } = useCheckoutStore();
 
   const { items } = useSyncedCart();
   const createOrder = useCreateOrder();
-  const verifyPayment = useVerifyPayment();
 
   const handleProceedToPayment = () => {
     if (!canProceedToPayment()) {

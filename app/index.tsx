@@ -11,7 +11,7 @@ import {
   View,
 } from 'react-native';
 
-const { width, height } = Dimensions.get('window');
+Dimensions.get('window');
 
 // Wenze Logo as base64 or use require
 const WenzeLogo = require('@/assets/images/icon.png');
@@ -42,7 +42,7 @@ export default function SplashScreen() {
     }, 2500);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [fadeAnim, scaleAnim, router]);
 
   return (
     <View style={styles.container}>

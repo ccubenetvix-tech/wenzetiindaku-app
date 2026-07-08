@@ -10,7 +10,7 @@ import { Tabs } from 'expo-router';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-function CartTabIcon({ color, focused }: { color: string; focused: boolean }) {
+function CartTabIcon({ color }: { color: string; focused: boolean }) {
   const cartCount = useCartItemCount();
   
   return (

@@ -1,15 +1,13 @@
 // app/(tabs)/cart.tsx
 import React, { useEffect } from 'react';
 import { View, Text, FlatList, Button } from 'react-native';
-import { useSyncedCart } from '@/src/api/useCart';
+import { useSyncedCart, useCartTotal } from '@/src/api/useCart';
 import { useAuth } from '@/contexts/auth-context';
-import { useCartTotal } from '@/src/api/useCart';
 
 export default function CartScreen() {
   const { isAuthenticated } = useAuth();
   const {
     items,
-    add,
     update,
     remove,
     clear,

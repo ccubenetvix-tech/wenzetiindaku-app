@@ -16,7 +16,7 @@ import {
     View
 } from 'react-native';
 
-const { width } = Dimensions.get('window');
+Dimensions.get('window');
 
 export function HeroBanner() {
   const router = useRouter();

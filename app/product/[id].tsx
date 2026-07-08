@@ -4,7 +4,7 @@
  */
 
 import { useProduct } from "@/src/api";
-import { useSyncedCart, useCartTotal } from "@/src/api/useCart";
+import { useSyncedCart } from "@/src/api/useCart";
 import { ErrorState, Header } from "@/src/components";
 import {
   BorderRadius,
@@ -37,8 +37,7 @@ export default function ProductDetailsScreen() {
   const [quantity, setQuantity] = useState(1);
 
   const { data: product, isLoading, error, refetch } = useProduct(id);
-  const { items, add, getItemQuantity } = useSyncedCart();
-  const total = useCartTotal();
+  const { add, getItemQuantity } = useSyncedCart();
 
   const quantityInCart = product ? getItemQuantity(product.id) : 0;
 
