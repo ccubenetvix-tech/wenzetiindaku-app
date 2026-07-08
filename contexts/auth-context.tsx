@@ -1,32 +1,44 @@
 /**
  * Auth Context
  * Handles email/password + Google OAuth.
- * Email login is wired to the real backend /api/auth/login.
- * Tokens stored in expo-secure-store (production-safe).
+ * Email login is wired to the real backend /api/auth/customer/login and /api/auth/vendor/login.
+ * Tokens are stored in expo-secure-store (production-safe).
  */
 
-import { ApiConfig, logger, StorageKeys } from '@/src/config';
-import { secureStorage } from '@/src/storage';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Google from 'expo-auth-session/providers/google';
-import * as WebBrowser from 'expo-web-browser';
-import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import { ApiConfig, logger, StorageKeys } from "@/src/config";
+import { secureStorage } from "@/src/storage";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Google from "expo-auth-session/providers/google";
+import * as WebBrowser from "expo-web-browser";
+import React, {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 
 WebBrowser.maybeCompleteAuthSession();
+
+type UserRole = "customer" | "vendor" | undefined;
 
 interface User {
   id: string;
   email: string;
   name: string;
   picture?: string;
-  role?: string;
+  role?: UserRole;
 }
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  signInWithEmail: (email: string, password: string) => Promise<void>;
+  signInWithEmail: (
+    email: string,
+    password: string,
+    role: "customer" | "vendor",
+  ) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   error: string | null;
@@ -40,28 +52,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   const [, response, promptAsync] = Google.useAuthRequest({
-    clientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID || '',
-    iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || '',
-    androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || '',
+    clientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID || "",
+    iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || "",
+    androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || "",
   });
 
-  useEffect(() => { loadStoredUser(); }, []);
+  useEffect(() => {
+    loadStoredUser();
+  }, []);
 
   useEffect(() => {
-    if (response?.type === 'success') {
+    if (response?.type === "success") {
       const { authentication } = response;
-      if (authentication?.accessToken) handleGoogleAccessToken(authentication.accessToken);
-    } else if (response?.type === 'error') {
-      setError('Google sign in failed. Please try again.');
+      if (authentication?.accessToken)
+        handleGoogleAccessToken(authentication.accessToken);
+    } else if (response?.type === "error") {
+      setError("Google sign in failed. Please try again.");
     }
   }, [response]);
 
   const loadStoredUser = async () => {
     try {
       const storedUser = await AsyncStorage.getItem(StorageKeys.user);
-      if (storedUser) setUser(JSON.parse(storedUser));
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+      }
     } catch (e) {
-      logger.error('Failed to load user from storage:', e);
+      logger.error("Failed to load user from storage:", e);
     } finally {
       setIsLoading(false);
     }
@@ -71,8 +88,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setIsLoading(true);
       const res = await fetch(`${ApiConfig.baseUrl}/auth/google/mobile`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ accessToken }),
       });
 
@@ -80,83 +97,133 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const json = await res.json();
         // Backend: { success: true, data: { user, token, refreshToken } }
         const payload = json.data ?? json;
+        const rawUser = payload.user;
+
         const userData: User = {
-          id: payload.user.id,
-          email: payload.user.email,
-          name: payload.user.name || `${payload.user.first_name ?? ''} ${payload.user.last_name ?? ''}`.trim(),
-          picture: payload.user.picture,
-          role: payload.user.role,
+          id: rawUser.id,
+          email: rawUser.email,
+          name:
+            rawUser.name ||
+            `${rawUser.first_name ?? ""} ${rawUser.last_name ?? ""}`.trim() ||
+            rawUser.email,
+          picture: rawUser.picture,
+          role: rawUser.role as UserRole,
         };
+
         await AsyncStorage.setItem(StorageKeys.user, JSON.stringify(userData));
         await secureStorage.setItem(StorageKeys.authToken, payload.token);
-        if (payload.refreshToken) await secureStorage.setItem(StorageKeys.refreshToken, payload.refreshToken);
+        if (payload.refreshToken) {
+          await secureStorage.setItem(
+            StorageKeys.refreshToken,
+            payload.refreshToken,
+          );
+        }
         setUser(userData);
         setError(null);
         return;
       }
     } catch (e) {
-      logger.warn('Backend Google exchange failed, falling back to Google userinfo');
+      logger.warn(
+        "Backend Google exchange failed, falling back to Google userinfo (limited mode)",
+      );
     }
 
+    // Fallback: lightweight Google profile, not a full backend-authenticated session
     try {
-      const googleRes = await fetch('https://www.googleapis.com/userinfo/v2/me', {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
+      const googleRes = await fetch(
+        "https://www.googleapis.com/userinfo/v2/me",
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        },
+      );
       const userInfo = await googleRes.json();
+
       const userData: User = {
         id: userInfo.id,
         email: userInfo.email,
-        name: userInfo.name,
+        name: userInfo.name || userInfo.email,
         picture: userInfo.picture,
+        role: "customer",
       };
+
       await AsyncStorage.setItem(StorageKeys.user, JSON.stringify(userData));
-      await secureStorage.setItem(StorageKeys.authToken, accessToken);
+      // Important: do NOT store the Google access token as backend auth token
       setUser(userData);
-      setError(null);
+      setError(
+        "Limited Google login: some features may be unavailable. Please try again later.",
+      );
     } catch (e) {
-      logger.error('Failed to fetch Google user info:', e);
-      setError('Failed to get user information from Google.');
+      logger.error("Failed to fetch Google user info:", e);
+      setError("Failed to get user information from Google.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const signInWithEmail = async (email: string, password: string) => {
+  const signInWithEmail = async (
+    email: string,
+    password: string,
+    role: "customer" | "vendor",
+  ) => {
     try {
       setIsLoading(true);
       setError(null);
-      if (!email || !password) throw new Error('Please enter email and password');
 
-      const res = await fetch(`${ApiConfig.baseUrl}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      if (!email || !password) {
+        throw new Error("Please enter email and password");
+      }
+
+      const path =
+        role === "vendor" ? "/auth/vendor/login" : "/auth/customer/login";
+
+      const res = await fetch(`${ApiConfig.baseUrl}${path}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
       const json = await res.json();
 
       if (!res.ok) {
-        // Backend error shape: { success: false, error: { message: '...' } } or { message: '...' }
-        const msg = json?.error?.message ?? json?.message ?? 'Sign in failed. Please try again.';
+        // Backend error shape: { success: false, error: { message } } or { message }
+        const msg =
+          json?.error?.message ??
+          json?.message ??
+          "Sign in failed. Please try again.";
         throw new Error(msg);
       }
 
       // Backend success shape: { success: true, data: { user, token, refreshToken } }
       const payload = json.data ?? json;
+      const rawUser = payload.user;
+
       const userData: User = {
-        id: payload.user.id,
-        email: payload.user.email,
-        name: payload.user.name || `${payload.user.first_name ?? ''} ${payload.user.last_name ?? ''}`.trim(),
-        picture: payload.user.picture,
-        role: payload.user.role,
+        id: rawUser.id,
+        email:
+          role === "vendor"
+            ? (rawUser.businessEmail ?? rawUser.email)
+            : rawUser.email,
+        name:
+          role === "vendor"
+            ? (rawUser.businessName ?? rawUser.email ?? rawUser.businessEmail)
+            : rawUser.firstName && rawUser.lastName
+              ? `${rawUser.firstName} ${rawUser.lastName}`.trim()
+              : (rawUser.name ?? rawUser.email),
+        picture: rawUser.profilePhoto,
+        role,
       };
 
       await AsyncStorage.setItem(StorageKeys.user, JSON.stringify(userData));
       await secureStorage.setItem(StorageKeys.authToken, payload.token);
-      if (payload.refreshToken) await secureStorage.setItem(StorageKeys.refreshToken, payload.refreshToken);
+      if (payload.refreshToken) {
+        await secureStorage.setItem(
+          StorageKeys.refreshToken,
+          payload.refreshToken,
+        );
+      }
       setUser(userData);
     } catch (e: any) {
-      setError(e.message || 'Sign in failed. Please try again.');
+      setError(e.message || "Sign in failed. Please try again.");
       throw e;
     } finally {
       setIsLoading(false);
@@ -168,7 +235,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setError(null);
       await promptAsync();
     } catch (e: any) {
-      setError('Google sign in failed. Please try again.');
+      setError("Google sign in failed. Please try again.");
       throw e;
     }
   };
@@ -178,10 +245,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(true);
       await AsyncStorage.removeItem(StorageKeys.user);
       await AsyncStorage.removeItem(StorageKeys.cart);
-      await secureStorage.multiRemove([StorageKeys.authToken, StorageKeys.refreshToken]);
+      await secureStorage.multiRemove([
+        StorageKeys.authToken,
+        StorageKeys.refreshToken,
+      ]);
       setUser(null);
     } catch (e) {
-      logger.error('Failed to sign out:', e);
+      logger.error("Failed to sign out:", e);
     } finally {
       setIsLoading(false);
     }
@@ -206,7 +276,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within an AuthProvider');
+  if (!context) throw new Error("useAuth must be used within an AuthProvider");
   return context;
 }
 
