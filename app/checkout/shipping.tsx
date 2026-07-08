@@ -90,21 +90,20 @@ export default function ShippingScreen() {
   } = useCheckoutStore();
 
   const [showSavedAddresses, setShowSavedAddresses] = useState(true);
-  const [selectedCountry, setSelectedCountry] = useState(shippingAddress?.country || 'CD');
 
   // Fetch saved addresses
-  const { data: fetchedAddresses, isLoading: addressesLoading } = useSavedAddresses();
+  const { data: fetchedAddresses } = useSavedAddresses();
   const saveAddressMutation = useSaveShippingAddress();
 
   useEffect(() => {
     if (fetchedAddresses) {
       setSavedAddresses(fetchedAddresses);
     }
-  }, [fetchedAddresses]);
+  }, [fetchedAddresses, setSavedAddresses]);
 
   useEffect(() => {
     setStep('shipping');
-  }, []);
+  }, [setStep]);
 
   // Redirect if no items
   if (!orderSummary || cartItems.length === 0) {

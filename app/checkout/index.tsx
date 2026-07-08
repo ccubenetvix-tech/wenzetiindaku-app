@@ -13,7 +13,7 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 export default function CheckoutIndex() {
   const router = useRouter();
   const { items } = useCartStore();
-  const { initCheckout, orderSummary } = useCheckoutStore();
+  const { initCheckout } = useCheckoutStore();
 
   useEffect(() => {
     if (items.length > 0) {
@@ -21,7 +21,7 @@ export default function CheckoutIndex() {
       initCheckout(items, summary);
       router.replace('/checkout/shipping');
     }
-  }, []);
+  }, [items, initCheckout, router]);
 
   // If cart is empty, redirect back
   if (items.length === 0) {

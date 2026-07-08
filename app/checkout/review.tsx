@@ -51,7 +51,7 @@ export default function ReviewScreen() {
 
   useEffect(() => {
     setStep('review');
-  }, []);
+  }, [setStep]);
 
   // Redirect if missing prerequisites
   if (!orderSummary || cartItems.length === 0) {
