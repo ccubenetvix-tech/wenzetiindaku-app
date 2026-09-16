@@ -1,11 +1,19 @@
-﻿name: CI
+﻿name: Mobile CI/CD
+
 on:
   pull_request:
     branches: [main]
   push:
     branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: mobile-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  lint-and-typecheck:
+  validate:
+    name: Validate mobile app
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -20,3 +28,41 @@ jobs:
         run: npx tsc --noEmit || echo "::warning::Typecheck has existing errors - tracked separately, not blocking"
       - name: Dependency audit (report only for now)
         run: npm audit --audit-level=high || echo "::warning::Audit found issues - tracked separately, not blocking"
+
+  eas-preview:
+    name: EAS preview build (manual trigger only)
+    needs: validate
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
+      - name: EAS build (preview)
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: eas build --profile preview --platform all --non-interactive
+
+  eas-production:
+    name: EAS production build
+    needs: validate
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
+      - name: EAS build (production)
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: eas build --profile production --platform all --non-interactive
