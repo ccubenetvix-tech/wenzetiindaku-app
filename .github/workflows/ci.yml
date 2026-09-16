@@ -1,0 +1,22 @@
+﻿name: CI
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+jobs:
+  lint-and-typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Typecheck (report only for now)
+        run: npx tsc --noEmit || echo "::warning::Typecheck has existing errors - tracked separately, not blocking"
+      - name: Dependency audit (report only for now)
+        run: npm audit --audit-level=high || echo "::warning::Audit found issues - tracked separately, not blocking"
