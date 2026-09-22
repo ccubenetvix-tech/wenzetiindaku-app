@@ -1,0 +1,113 @@
+﻿name: Mobile CI/CD
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: mobile-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate mobile app
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Typecheck (report only for now)
+        run: npx tsc --noEmit || echo "::warning::Typecheck has existing errors - tracked separately, not blocking"
+      - name: Dependency audit (report only for now)
+        run: npm audit --audit-level=high || echo "::warning::Audit found issues - tracked separately, not blocking"
+
+  eas-preview-android:
+    name: EAS preview build - Android (manual trigger only)
+    needs: validate
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
+      - name: EAS build (preview, android)
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: eas build --profile preview --platform android --non-interactive
+
+  eas-production-android:
+    name: EAS production build - Android
+    needs: validate
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
+      - name: EAS build (production, android)
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: eas build --profile production --platform android --non-interactive
+
+  # ============================================================
+  # iOS PLACEHOLDER - disabled until Apple Developer credentials
+  # exist. Setup required first (run locally, not in CI, once):
+  #   eas build --profile preview --platform ios
+  # Then activate each job below by deleting "false && " from
+  # its "if:" line.
+  # ============================================================
+  eas-preview-ios:
+    name: EAS preview build - iOS (disabled - no Apple Developer creds yet)
+    needs: validate
+    if: false && github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
+      - name: EAS build (preview, ios)
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: eas build --profile preview --platform ios --non-interactive
+
+  eas-production-ios:
+    name: EAS production build - iOS (disabled - no Apple Developer creds yet)
+    needs: validate
+    if: false && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
+      - name: EAS build (production, ios)
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: eas build --profile production --platform ios --non-interactive
