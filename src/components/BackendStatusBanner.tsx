@@ -3,7 +3,7 @@
  * Shows a friendly message when backend is cold-starting or rate limited
  */
 
-import { Colors, FontSize, FontWeight, Spacing } from '@/src/theme';
+import { Colors, FontFamily, FontSize, Spacing } from '@/src/theme';
 import React from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: FontSize.md,
-    fontWeight: FontWeight.normal,
+    fontFamily: FontFamily.normal,
     color: '#FFF',
     flex: 1,
   },

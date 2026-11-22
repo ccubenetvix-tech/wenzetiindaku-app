@@ -5,7 +5,7 @@
 
 import { useCustomerProfile, useUpdateProfile } from '@/src/api/useCustomer';
 import { Header } from '@/src/components';
-import { BorderRadius, Colors, FontSize, FontWeight, Shadow, Spacing } from '@/src/theme';
+import { BorderRadius, Colors, FontFamily, FontSize, Shadow, Spacing } from '@/src/theme';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -46,9 +46,9 @@ export default function EditProfileScreen() {
     }
     try {
       await updateProfile.mutateAsync({
-        first_name: firstName.trim(),
-        last_name: lastName.trim(),
-        phone: phone.trim(),
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        phoneNumber: phone.trim(),
       });
       Alert.alert('Success', 'Profile updated successfully.', [
         { text: 'OK', onPress: () => router.back() },
@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
     ...Shadow.sm,
   },
-  label: { fontSize: FontSize.sm, fontWeight: FontWeight.semibold, color: Colors.text.secondary, marginBottom: Spacing.xs, marginTop: Spacing.md },
+  label: { fontSize: FontSize.sm, fontFamily: FontFamily.semibold, color: Colors.text.secondary, marginBottom: Spacing.xs, marginTop: Spacing.md },
   input: {
     borderWidth: 1,
     borderColor: Colors.border.medium,
@@ -141,5 +141,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   saveBtnDisabled: { opacity: 0.6 },
-  saveBtnText: { color: Colors.white, fontSize: FontSize.lg, fontWeight: FontWeight.bold },
+  saveBtnText: { color: Colors.white, fontSize: FontSize.lg, fontFamily: FontFamily.bold },
 });

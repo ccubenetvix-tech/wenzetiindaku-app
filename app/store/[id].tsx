@@ -4,8 +4,8 @@
  */
 
 import { useProductsByStore, useStore } from '@/src/api';
-import { EmptyState, ErrorState, Header, ProductCard, ProductCardSkeleton } from '@/src/components';
-import { BorderRadius, Colors, FontSize, FontWeight, Shadow, Spacing } from '@/src/theme';
+import { EmptyState, ErrorState, Header, ProductCard, ProductCardSkeleton, VendorChatButton } from '@/src/components';
+import { BorderRadius, Colors, FontFamily, FontSize, Shadow, Spacing } from '@/src/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
 import React from 'react';
@@ -91,6 +91,12 @@ export default function StoreDetailsScreen() {
             </View>
           ))}
         </View>
+
+        {store.id && (
+          <View style={styles.chatContainer}>
+            <VendorChatButton vendorId={store.id} vendorName={store.name} />
+          </View>
+        )}
 
         {store.description && (
           <Text style={styles.storeDescription}>{store.description}</Text>
@@ -188,7 +194,7 @@ const styles = StyleSheet.create({
   },
   storeName: {
     fontSize: FontSize.xl,
-    fontWeight: FontWeight.bold,
+    fontFamily: FontFamily.bold,
     color: Colors.text.primary,
   },
   locationRow: {
@@ -214,6 +220,10 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     color: Colors.text.secondary,
   },
+  chatContainer: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+  },
   tagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -229,7 +239,7 @@ const styles = StyleSheet.create({
   tagText: {
     fontSize: FontSize.sm,
     color: Colors.primary,
-    fontWeight: FontWeight.medium,
+    fontFamily: FontFamily.medium,
   },
   storeDescription: {
     fontSize: FontSize.md,
@@ -247,7 +257,7 @@ const styles = StyleSheet.create({
   },
   productsTitle: {
     fontSize: FontSize.lg,
-    fontWeight: FontWeight.semibold,
+    fontFamily: FontFamily.semibold,
     color: Colors.text.primary,
   },
   productsCount: {

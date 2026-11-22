@@ -2,7 +2,7 @@ import { useProducts } from '@/src/api/useProducts';
 import { EmptyState, ErrorState } from '@/src/components/ErrorState';
 import { ProductCard } from '@/src/components/ProductCard';
 import { Skeleton } from '@/src/components/Skeleton';
-import { BorderRadius, Colors, FontSize, Spacing } from '@/src/theme';
+import { BorderRadius, Colors, FontFamily, FontSize, Spacing } from '@/src/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: FontSize.lg,
-    fontWeight: '600',
+    fontFamily: FontFamily.semibold,
     color: Colors.text.primary,
   },
   searchButton: {
@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
   },
   sortOptionTextActive: {
     color: Colors.primary[600],
-    fontWeight: '600',
+    fontFamily: FontFamily.semibold,
   },
   listContainer: {
     padding: Spacing.md,

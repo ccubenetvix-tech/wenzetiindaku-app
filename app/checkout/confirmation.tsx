@@ -6,7 +6,7 @@
 import { useCartStore } from '@/src/api/useCart';
 import { useCheckoutStore } from '@/src/api/useCheckout';
 import { logger } from '@/src/config';
-import { BorderRadius, Colors, FontSize, FontWeight, Shadow, Spacing } from '@/src/theme';
+import { BorderRadius, Colors, FontFamily, FontSize, Shadow, Spacing } from '@/src/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
@@ -213,11 +213,12 @@ export default function ConfirmationScreen() {
               <Text style={styles.addressTitle}>Delivery Address</Text>
             </View>
             <Text style={styles.addressName}>
-              {shippingAddress.firstName} {shippingAddress.lastName}
+              {shippingAddress.fullName}
+              {shippingAddress.label ? ` · ${shippingAddress.label}` : ''}
             </Text>
             <Text style={styles.addressLine}>
-              {shippingAddress.streetAddress}
-              {shippingAddress.apartment ? `, ${shippingAddress.apartment}` : ''}
+              {shippingAddress.street1}
+              {shippingAddress.street2 ? `, ${shippingAddress.street2}` : ''}
             </Text>
             <Text style={styles.addressLine}>
               {shippingAddress.city}, {shippingAddress.state} {shippingAddress.postalCode}
@@ -342,12 +343,12 @@ const styles = StyleSheet.create({
   },
   logoText: {
     fontSize: FontSize.md,
-    fontWeight: FontWeight.bold,
+    fontFamily: FontFamily.bold,
     color: Colors.primary,
   },
   logoTextGreen: {
     fontSize: FontSize.xs,
-    fontWeight: FontWeight.semibold,
+    fontFamily: FontFamily.semibold,
     color: Colors.secondary,
   },
   scrollView: {
@@ -383,7 +384,7 @@ const styles = StyleSheet.create({
   },
   successTitle: {
     fontSize: FontSize['2xl'],
-    fontWeight: FontWeight.bold,
+    fontFamily: FontFamily.bold,
     color: Colors.text.primary,
     marginBottom: Spacing.sm,
   },
@@ -415,7 +416,7 @@ const styles = StyleSheet.create({
   },
   orderNumber: {
     fontSize: FontSize['2xl'],
-    fontWeight: FontWeight.bold,
+    fontFamily: FontFamily.bold,
     color: Colors.primary,
     marginBottom: Spacing.md,
   },
@@ -432,7 +433,7 @@ const styles = StyleSheet.create({
   },
   transactionId: {
     fontSize: FontSize.sm,
-    fontWeight: FontWeight.medium,
+    fontFamily: FontFamily.medium,
     color: Colors.text.primary,
     marginLeft: Spacing.xs,
   },
@@ -463,7 +464,7 @@ const styles = StyleSheet.create({
   },
   statusTitle: {
     fontSize: FontSize.md,
-    fontWeight: FontWeight.semibold,
+    fontFamily: FontFamily.semibold,
     color: Colors.text.primary,
   },
   statusBadge: {
@@ -477,7 +478,7 @@ const styles = StyleSheet.create({
   statusBadgeText: {
     fontSize: FontSize.xs,
     color: Colors.secondary,
-    fontWeight: FontWeight.semibold,
+    fontFamily: FontFamily.semibold,
   },
   timeline: {
     paddingLeft: Spacing.xs,
@@ -508,12 +509,12 @@ const styles = StyleSheet.create({
   },
   timelineTitle: {
     fontSize: FontSize.sm,
-    fontWeight: FontWeight.semibold,
+    fontFamily: FontFamily.semibold,
     color: Colors.text.primary,
   },
   timelineTitlePending: {
     fontSize: FontSize.sm,
-    fontWeight: FontWeight.medium,
+    fontFamily: FontFamily.medium,
     color: Colors.gray[500],
   },
   timelineDate: {
@@ -529,7 +530,7 @@ const styles = StyleSheet.create({
   timelineDateHighlight: {
     fontSize: FontSize.xs,
     color: Colors.secondary,
-    fontWeight: FontWeight.medium,
+    fontFamily: FontFamily.medium,
     marginTop: 2,
   },
   timelineConnector: {
@@ -553,13 +554,13 @@ const styles = StyleSheet.create({
   },
   addressTitle: {
     fontSize: FontSize.md,
-    fontWeight: FontWeight.semibold,
+    fontFamily: FontFamily.semibold,
     color: Colors.text.primary,
     marginLeft: Spacing.sm,
   },
   addressName: {
     fontSize: FontSize.md,
-    fontWeight: FontWeight.semibold,
+    fontFamily: FontFamily.semibold,
     color: Colors.text.primary,
     marginBottom: Spacing.xs,
   },
@@ -583,7 +584,7 @@ const styles = StyleSheet.create({
   },
   paymentTitle: {
     fontSize: FontSize.md,
-    fontWeight: FontWeight.semibold,
+    fontFamily: FontFamily.semibold,
     color: Colors.text.primary,
     marginLeft: Spacing.sm,
   },
@@ -599,12 +600,12 @@ const styles = StyleSheet.create({
   },
   paymentAmount: {
     fontSize: FontSize.lg,
-    fontWeight: FontWeight.bold,
+    fontFamily: FontFamily.bold,
     color: Colors.secondary,
   },
   paymentMethod: {
     fontSize: FontSize.sm,
-    fontWeight: FontWeight.medium,
+    fontFamily: FontFamily.medium,
     color: Colors.text.primary,
   },
   nextStepsCard: {
@@ -617,7 +618,7 @@ const styles = StyleSheet.create({
   },
   nextStepsTitle: {
     fontSize: FontSize.md,
-    fontWeight: FontWeight.semibold,
+    fontFamily: FontFamily.semibold,
     color: Colors.text.primary,
     marginBottom: Spacing.md,
   },
@@ -638,7 +639,7 @@ const styles = StyleSheet.create({
   },
   nextStepNumberText: {
     fontSize: FontSize.xs,
-    fontWeight: FontWeight.bold,
+    fontFamily: FontFamily.bold,
     color: Colors.primary,
   },
   nextStepContent: {
@@ -647,7 +648,7 @@ const styles = StyleSheet.create({
   },
   nextStepItemTitle: {
     fontSize: FontSize.sm,
-    fontWeight: FontWeight.semibold,
+    fontFamily: FontFamily.semibold,
     color: Colors.text.primary,
   },
   nextStepItemDescription: {
@@ -673,7 +674,7 @@ const styles = StyleSheet.create({
   helpLinkText: {
     fontSize: FontSize.sm,
     color: Colors.primary,
-    fontWeight: FontWeight.medium,
+    fontFamily: FontFamily.medium,
   },
   bottomBar: {
     position: 'absolute',
@@ -704,7 +705,7 @@ const styles = StyleSheet.create({
   viewOrderText: {
     fontSize: FontSize.sm,
     color: Colors.primary,
-    fontWeight: FontWeight.medium,
+    fontFamily: FontFamily.medium,
   },
   continueShoppingButton: {
     flex: 1,
@@ -719,6 +720,6 @@ const styles = StyleSheet.create({
   continueShoppingText: {
     fontSize: FontSize.md,
     color: Colors.white,
-    fontWeight: FontWeight.semibold,
+    fontFamily: FontFamily.semibold,
   },
 });

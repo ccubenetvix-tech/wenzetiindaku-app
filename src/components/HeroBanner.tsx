@@ -3,7 +3,7 @@
  * Main hero section for the home screen
  */
 
-import { BorderRadius, Colors, FontSize, FontWeight, Spacing } from '@/src/theme';
+import { BorderRadius, Colors, FontFamily, FontSize, Spacing } from '@/src/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -113,12 +113,12 @@ const styles = StyleSheet.create({
   badgeText: {
     color: Colors.white,
     fontSize: FontSize.sm,
-    fontWeight: FontWeight.medium,
+    fontFamily: FontFamily.medium,
     marginLeft: Spacing.xs,
   },
   title: {
     fontSize: FontSize['4xl'],
-    fontWeight: FontWeight.bold,
+    fontFamily: FontFamily.bold,
     color: Colors.white,
     marginBottom: Spacing.md,
     lineHeight: 36,
@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     color: Colors.primary,
     fontSize: FontSize.md,
-    fontWeight: FontWeight.semibold,
+    fontFamily: FontFamily.semibold,
   },
   secondaryButton: {
     flexDirection: 'row',
@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     color: Colors.white,
     fontSize: FontSize.md,
-    fontWeight: FontWeight.semibold,
+    fontFamily: FontFamily.semibold,
   },
   features: {
     flexDirection: 'row',
@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
   featureText: {
     color: 'rgba(255, 255, 255, 0.9)',
     fontSize: FontSize.sm,
-    fontWeight: FontWeight.medium,
+    fontFamily: FontFamily.medium,
   },
   decorCircle1: {
     position: 'absolute',

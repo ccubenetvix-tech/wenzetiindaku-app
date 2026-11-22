@@ -4,7 +4,7 @@
  */
 
 import { Product, useCartStore } from '@/src/api';
-import { BorderRadius, Colors, FontSize, FontWeight, Shadow, Spacing } from '@/src/theme';
+import { BorderRadius, Colors, FontFamily, FontSize, Shadow, Spacing } from '@/src/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
@@ -154,14 +154,14 @@ const styles = StyleSheet.create({
   quantityBadgeText: {
     color: Colors.white,
     fontSize: FontSize.xs,
-    fontWeight: FontWeight.bold,
+    fontFamily: FontFamily.bold,
   },
   content: {
     padding: Spacing.md,
   },
   name: {
     fontSize: FontSize.md,
-    fontWeight: FontWeight.medium,
+    fontFamily: FontFamily.medium,
     color: Colors.text.primary,
     marginBottom: Spacing.sm,
     lineHeight: 20,
@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
   },
   price: {
     fontSize: FontSize.lg,
-    fontWeight: FontWeight.bold,
+    fontFamily: FontFamily.bold,
     color: Colors.text.primary,
   },
   comparePrice: {
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
   addToCartText: {
     color: Colors.white,
     fontSize: FontSize.sm,
-    fontWeight: FontWeight.semibold,
+    fontFamily: FontFamily.semibold,
   },
 });
 

@@ -1,7 +1,8 @@
 import { useAuth } from '@/contexts/auth-context';
 import { logger } from '@/src/config';
-import { Colors } from '@/src/theme';
+import { Colors, FontFamily } from '@/src/theme';
 import { Ionicons } from '@expo/vector-icons';
+import * as WebBrowser from 'expo-web-browser';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
@@ -38,7 +39,7 @@ export default function LoginScreen() {
       return;
     }
     try {
-      await signInWithEmail(email, password);
+      await signInWithEmail(email, password, 'customer');
       // Navigate to tabs after successful login
       router.replace('/(tabs)');
     } catch (err: any) {
@@ -56,18 +57,22 @@ export default function LoginScreen() {
   };
 
   const handleForgotPassword = () => {
-    // TODO: Navigate to forgot password screen
-    logger.log('Forgot password pressed');
+    router.push('/forgot-password');
   };
 
   const handleSignUp = () => {
-    // TODO: Navigate to sign up screen
-    logger.log('Sign up pressed');
+    router.push('/signup');
   };
 
-  const handleBecomeVendor = () => {
-    // TODO: Navigate to vendor registration
-    logger.log('Become a vendor pressed');
+  const handleBecomeVendor = async () => {
+    // Vendor onboarding is web-only: open the website's vendor registration
+    try {
+      await WebBrowser.openBrowserAsync(
+        'https://www.wenzetiindaku.com/vendor/register',
+      );
+    } catch (err) {
+      logger.warn('Failed to open vendor registration page:', err);
+    }
   };
 
   return (
@@ -87,7 +92,7 @@ export default function LoginScreen() {
             <Image source={WenzeLogo} style={styles.logoImage} resizeMode="contain" />
             <View style={styles.logoTextContainer}>
               <Text style={styles.logoText}>WENZE</Text>
-              <Text style={styles.logoTextGreen}>TII NDAKU</Text>
+              <Text style={styles.logoTextAccent}>TII NDAKU</Text>
             </View>
           </View>
           <Text style={styles.welcomeText}>Welcome Back</Text>
@@ -262,20 +267,20 @@ const styles = StyleSheet.create({
   },
   logoText: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontFamily: FontFamily.bold,
     color: Colors.primary,
     letterSpacing: 2,
   },
-  logoTextGreen: {
+  logoTextAccent: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontFamily: FontFamily.bold,
     color: Colors.secondary,
     letterSpacing: 2,
     marginTop: -4,
   },
   welcomeText: {
     fontSize: 28,
-    fontWeight: 'bold',
+    fontFamily: FontFamily.bold,
     color: Colors.text.primary,
     marginBottom: 8,
   },
@@ -291,7 +296,7 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: FontFamily.semibold,
     color: Colors.text.primary,
     marginBottom: 8,
   },
@@ -337,7 +342,7 @@ const styles = StyleSheet.create({
   forgotPasswordText: {
     fontSize: 14,
     color: Colors.primary,
-    fontWeight: '600',
+    fontFamily: FontFamily.semibold,
   },
   signInButton: {
     backgroundColor: Colors.primary,
@@ -358,7 +363,7 @@ const styles = StyleSheet.create({
   signInButtonText: {
     color: Colors.white,
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: FontFamily.semibold,
   },
   dividerContainer: {
     flexDirection: 'row',
@@ -392,7 +397,7 @@ const styles = StyleSheet.create({
   googleButtonText: {
     color: Colors.text.primary,
     fontSize: 16,
-    fontWeight: '500',
+    fontFamily: FontFamily.medium,
     marginLeft: 12,
   },
   signUpContainer: {
@@ -407,7 +412,7 @@ const styles = StyleSheet.create({
   signUpLink: {
     fontSize: 14,
     color: Colors.primary,
-    fontWeight: '600',
+    fontFamily: FontFamily.semibold,
   },
   vendorContainer: {
     flexDirection: 'row',
@@ -426,7 +431,7 @@ const styles = StyleSheet.create({
   vendorLink: {
     fontSize: 14,
     color: Colors.secondary,
-    fontWeight: '600',
+    fontFamily: FontFamily.semibold,
   },
   supportSection: {
     backgroundColor: Colors.gray[50],
@@ -435,7 +440,7 @@ const styles = StyleSheet.create({
   },
   supportTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: FontFamily.semibold,
     color: Colors.text.primary,
     marginBottom: 16,
     textAlign: 'center',
