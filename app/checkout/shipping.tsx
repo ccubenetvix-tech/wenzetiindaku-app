@@ -3,20 +3,23 @@
  * Step 1: Enter/select shipping address
  */
 
+import { useAuth } from '@/contexts/auth-context';
 import { useSavedAddresses, useSaveShippingAddress } from '@/src/api/checkoutApi';
 import { COUNTRY_LIST, ShippingAddress } from '@/src/api/checkoutTypes';
 import { useCheckoutStore } from '@/src/api/useCheckout';
 import { CheckoutStepper } from '@/src/components/CheckoutStepper';
 import { OrderSummaryCard } from '@/src/components/OrderSummaryCard';
-import { BorderRadius, Colors, FontSize, FontWeight, Shadow, Spacing } from '@/src/theme';
+import { BorderRadius, Colors, FontFamily, FontSize, Shadow, Spacing } from '@/src/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
+    FlatList,
     Image,
     KeyboardAvoidingView,
+    Modal,
     Platform,
     ScrollView,
     StyleSheet,
@@ -72,8 +75,11 @@ function FormField({
   );
 }
 
+const ADDRESS_LABELS = ['Home', 'Work', 'Other'];
+
 export default function ShippingScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   const {
     shippingAddress,
     shippingErrors,
@@ -90,6 +96,7 @@ export default function ShippingScreen() {
   } = useCheckoutStore();
 
   const [showSavedAddresses, setShowSavedAddresses] = useState(true);
+  const [countryModalVisible, setCountryModalVisible] = useState(false);
 
   // Fetch saved addresses
   const { data: fetchedAddresses } = useSavedAddresses();
@@ -104,6 +111,17 @@ export default function ShippingScreen() {
   useEffect(() => {
     setStep('shipping');
   }, [setStep]);
+
+  // Prefill contact details from the signed-in user (once)
+  useEffect(() => {
+    if (user && shippingAddress && !shippingAddress.email) {
+      setShippingAddress({
+        email: user.email ?? '',
+        fullName: shippingAddress.fullName || user.name || '',
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   // Redirect if no items
   if (!orderSummary || cartItems.length === 0) {
@@ -131,10 +149,7 @@ export default function ShippingScreen() {
     try {
       // Save address to backend if needed
       if (shippingAddress?.saveToProfile) {
-        await saveAddressMutation.mutateAsync({
-          sessionId: 'checkout-session',
-          address: shippingAddress,
-        });
+        await saveAddressMutation.mutateAsync(shippingAddress);
       }
 
       // Navigate to payment
@@ -199,7 +214,8 @@ export default function ShippingScreen() {
                   <View style={styles.savedAddressContent}>
                     <View style={styles.savedAddressHeader}>
                       <Text style={styles.savedAddressName}>
-                        {addr.firstName} {addr.lastName}
+                        {addr.fullName}
+                        {addr.label ? ` · ${addr.label}` : ''}
                       </Text>
                       {addr.isDefault && (
                         <View style={styles.defaultBadge}>
@@ -208,8 +224,8 @@ export default function ShippingScreen() {
                       )}
                     </View>
                     <Text style={styles.savedAddressText}>
-                      {addr.streetAddress}
-                      {addr.apartment ? `, ${addr.apartment}` : ''}
+                      {addr.street1}
+                      {addr.street2 ? `, ${addr.street2}` : ''}
                     </Text>
                     <Text style={styles.savedAddressText}>
                       {addr.city}, {addr.state} {addr.postalCode}
@@ -238,30 +254,41 @@ export default function ShippingScreen() {
             <View style={styles.formSection}>
               <Text style={styles.sectionTitle}>Shipping Details</Text>
 
-              <View style={styles.row}>
-                <View style={styles.halfField}>
-                  <FormField
-                    label="First Name"
-                    value={shippingAddress?.firstName || ''}
-                    onChangeText={(v) => handleFieldChange('firstName', v)}
-                    placeholder="John"
-                    error={shippingErrors.firstName}
-                    autoCapitalize="words"
-                    required
-                  />
-                </View>
-                <View style={styles.halfField}>
-                  <FormField
-                    label="Last Name"
-                    value={shippingAddress?.lastName || ''}
-                    onChangeText={(v) => handleFieldChange('lastName', v)}
-                    placeholder="Doe"
-                    error={shippingErrors.lastName}
-                    autoCapitalize="words"
-                    required
-                  />
+              {/* Address label chips */}
+              <View style={styles.fieldContainer}>
+                <Text style={styles.fieldLabel}>Address Type</Text>
+                <View style={styles.labelChipsRow}>
+                  {ADDRESS_LABELS.map((label) => {
+                    const active = (shippingAddress?.label || 'Home') === label;
+                    return (
+                      <TouchableOpacity
+                        key={label}
+                        style={[styles.labelChip, active && styles.labelChipActive]}
+                        onPress={() => handleFieldChange('label', label)}
+                      >
+                        <Text
+                          style={[
+                            styles.labelChipText,
+                            active && styles.labelChipTextActive,
+                          ]}
+                        >
+                          {label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
               </View>
+
+              <FormField
+                label="Full Name"
+                value={shippingAddress?.fullName || ''}
+                onChangeText={(v) => handleFieldChange('fullName', v)}
+                placeholder="John Doe"
+                error={shippingErrors.fullName}
+                autoCapitalize="words"
+                required
+              />
 
               <FormField
                 label="Email Address"
@@ -285,19 +312,19 @@ export default function ShippingScreen() {
               />
 
               <FormField
-                label="Street Address"
-                value={shippingAddress?.streetAddress || ''}
-                onChangeText={(v) => handleFieldChange('streetAddress', v)}
+                label="House No / Street Address"
+                value={shippingAddress?.street1 || ''}
+                onChangeText={(v) => handleFieldChange('street1', v)}
                 placeholder="123 Main Street"
-                error={shippingErrors.streetAddress}
+                error={shippingErrors.street1}
                 required
               />
 
               <FormField
-                label="Apartment / Suite (Optional)"
-                value={shippingAddress?.apartment || ''}
-                onChangeText={(v) => handleFieldChange('apartment', v)}
-                placeholder="Apt 4B"
+                label="Apartment / Area (Optional)"
+                value={shippingAddress?.street2 || ''}
+                onChangeText={(v) => handleFieldChange('street2', v)}
+                placeholder="Apt 4B, Downtown"
               />
 
               <View style={styles.row}>
@@ -331,6 +358,7 @@ export default function ShippingScreen() {
                     onChangeText={(v) => handleFieldChange('postalCode', v)}
                     placeholder="12345"
                     error={shippingErrors.postalCode}
+                    keyboardType="numeric"
                     required
                   />
                 </View>
@@ -339,9 +367,12 @@ export default function ShippingScreen() {
                     <Text style={styles.fieldLabel}>
                       Country<Text style={styles.required}> *</Text>
                     </Text>
-                    <TouchableOpacity style={styles.countrySelector}>
-                      <Text style={styles.countrySelectorText}>
-                        {COUNTRY_LIST.find(c => c.code === (shippingAddress?.country || 'CD'))?.name || 'Select Country'}
+                    <TouchableOpacity
+                      style={styles.countrySelector}
+                      onPress={() => setCountryModalVisible(true)}
+                    >
+                      <Text style={styles.countrySelectorText} numberOfLines={1}>
+                        {shippingAddress?.country || 'Select Country'}
                       </Text>
                       <Ionicons name="chevron-down" size={16} color={Colors.gray[400]} />
                     </TouchableOpacity>
@@ -382,6 +413,43 @@ export default function ShippingScreen() {
           <View style={styles.bottomSpacing} />
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Country Picker Modal */}
+      <Modal
+        visible={countryModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Select Country</Text>
+            <TouchableOpacity onPress={() => setCountryModalVisible(false)}>
+              <Ionicons name="close" size={24} color={Colors.text.primary} />
+            </TouchableOpacity>
+          </View>
+          <FlatList
+            data={COUNTRY_LIST}
+            keyExtractor={(item) => item.code}
+            renderItem={({ item }) => {
+              const active = shippingAddress?.country === item.name;
+              return (
+                <TouchableOpacity
+                  style={[styles.countryRow, active && styles.countryRowActive]}
+                  onPress={() => {
+                    handleFieldChange('country', item.name);
+                    setCountryModalVisible(false);
+                  }}
+                >
+                  <Text style={styles.countryRowText}>{item.name}</Text>
+                  {active && (
+                    <Ionicons name="checkmark" size={20} color={Colors.primary} />
+                  )}
+                </TouchableOpacity>
+              );
+            }}
+          />
+        </SafeAreaView>
+      </Modal>
 
       {/* Bottom Actions */}
       <View style={styles.bottomBar}>
@@ -429,7 +497,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: FontSize.lg,
-    fontWeight: FontWeight.semibold,
+    fontFamily: FontFamily.semibold,
     color: Colors.text.primary,
   },
   logoImage: {
@@ -455,7 +523,7 @@ const styles = StyleSheet.create({
   },
   stepTitle: {
     fontSize: FontSize.lg,
-    fontWeight: FontWeight.semibold,
+    fontFamily: FontFamily.semibold,
     color: Colors.text.primary,
   },
   stepSubtitle: {
@@ -465,7 +533,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: FontSize.md,
-    fontWeight: FontWeight.semibold,
+    fontFamily: FontFamily.semibold,
     color: Colors.text.primary,
     marginBottom: Spacing.md,
   },
@@ -497,7 +565,7 @@ const styles = StyleSheet.create({
   },
   savedAddressName: {
     fontSize: FontSize.md,
-    fontWeight: FontWeight.semibold,
+    fontFamily: FontFamily.semibold,
     color: Colors.text.primary,
   },
   defaultBadge: {
@@ -510,7 +578,7 @@ const styles = StyleSheet.create({
   defaultBadgeText: {
     fontSize: FontSize.xs,
     color: Colors.white,
-    fontWeight: FontWeight.medium,
+    fontFamily: FontFamily.medium,
   },
   savedAddressText: {
     fontSize: FontSize.sm,
@@ -542,7 +610,7 @@ const styles = StyleSheet.create({
   addNewButtonText: {
     fontSize: FontSize.md,
     color: Colors.primary,
-    fontWeight: FontWeight.medium,
+    fontFamily: FontFamily.medium,
     marginLeft: Spacing.sm,
   },
   formSection: {
@@ -555,7 +623,7 @@ const styles = StyleSheet.create({
   },
   fieldLabel: {
     fontSize: FontSize.sm,
-    fontWeight: FontWeight.medium,
+    fontFamily: FontFamily.medium,
     color: Colors.text.primary,
     marginBottom: Spacing.xs,
   },
@@ -603,6 +671,64 @@ const styles = StyleSheet.create({
     fontSize: FontSize.md,
     color: Colors.text.primary,
   },
+  labelChipsRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  labelChip: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+    borderColor: Colors.border.medium,
+    backgroundColor: Colors.white,
+  },
+  labelChipActive: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primaryFaded,
+  },
+  labelChipText: {
+    fontSize: FontSize.sm,
+    fontFamily: FontFamily.medium,
+    color: Colors.text.secondary,
+  },
+  labelChipTextActive: {
+    color: Colors.primary,
+    fontFamily: FontFamily.semibold,
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: Colors.white,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: Spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border.light,
+  },
+  modalTitle: {
+    fontSize: FontSize.xl,
+    fontFamily: FontFamily.bold,
+    color: Colors.text.primary,
+  },
+  countryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border.light,
+  },
+  countryRowActive: {
+    backgroundColor: Colors.primaryFaded,
+  },
+  countryRowText: {
+    fontSize: FontSize.md,
+    color: Colors.text.primary,
+  },
   switchRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -620,7 +746,7 @@ const styles = StyleSheet.create({
   useSavedButtonText: {
     fontSize: FontSize.md,
     color: Colors.primary,
-    fontWeight: FontWeight.medium,
+    fontFamily: FontFamily.medium,
   },
   summarySection: {
     padding: Spacing.lg,
@@ -656,7 +782,7 @@ const styles = StyleSheet.create({
   modifyCartText: {
     fontSize: FontSize.sm,
     color: Colors.primary,
-    fontWeight: FontWeight.medium,
+    fontFamily: FontFamily.medium,
   },
   continueButton: {
     flex: 1,
@@ -671,7 +797,7 @@ const styles = StyleSheet.create({
   continueButtonText: {
     fontSize: FontSize.md,
     color: Colors.white,
-    fontWeight: FontWeight.semibold,
+    fontFamily: FontFamily.semibold,
   },
   buttonDisabled: {
     opacity: 0.7,

@@ -3,7 +3,7 @@
  * Displays error message with retry button
  */
 
-import { BorderRadius, Colors, FontSize, FontWeight, Spacing } from '@/src/theme';
+import { BorderRadius, Colors, FontFamily, FontSize, Spacing } from '@/src/theme';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import {
@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: FontSize.xl,
-    fontWeight: FontWeight.semibold,
+    fontFamily: FontFamily.semibold,
     color: Colors.text.primary,
     marginTop: Spacing.lg,
     marginBottom: Spacing.sm,
@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
   retryText: {
     color: Colors.white,
     fontSize: FontSize.md,
-    fontWeight: FontWeight.semibold,
+    fontFamily: FontFamily.semibold,
   },
   actionButton: {
     paddingVertical: Spacing.md,
@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
   actionText: {
     color: Colors.primary,
     fontSize: FontSize.md,
-    fontWeight: FontWeight.semibold,
+    fontFamily: FontFamily.semibold,
   },
 });
 

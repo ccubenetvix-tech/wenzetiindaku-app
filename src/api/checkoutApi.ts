@@ -1,113 +1,156 @@
 /**
- * Checkout API Hooks
- * Wires to real backend endpoints:
- * - GET /customer/addresses → saved addresses
- * - POST /payment/initiate → create payment intent
- * - POST /customer/orders → create order from cart
- * - POST /customer/orders/verify-payment → verify payment
- * - GET /customer/orders/{orderId} → fetch order details
+ * Checkout API Hooks — wired to the real backend endpoints:
+ * - GET  /customer/addresses              → saved addresses (snake_case rows, mapped)
+ * - POST /customer/addresses              → save address to profile
+ * - POST /customer/orders                 → create order(s) (COD or MaishaPay online)
+ * - POST /payment/initiate                → re-initiate MaishaPay checkout for an order
+ * - POST /customer/orders/verify-payment  → verify MaishaPay payment
+ * - GET  /customer/orders/{orderId}       → order details
  */
 
 import { useMutation, useQuery } from '@tanstack/react-query';
 import {
-    ConfirmOrderRequest,
-    OrderConfirmation,
-    CreatePaymentIntentRequest,
-    PaymentIntent,
-    SaveShippingAddressRequest,
-    SaveShippingAddressResponse,
+    CreateOrderRequest,
+    CreateOrderResponse,
+    MaishaPayCheckout,
+    PaymentResult,
     ShippingAddress,
+    VerifyPaymentRequest,
 } from './checkoutTypes';
 import { apiClient } from './client';
 
-// API Functions - all wired to real backend endpoints
+/** Map a snake_case customer_addresses row to the canonical ShippingAddress shape */
+function mapAddressRow(row: any): ShippingAddress {
+  return {
+    id: row?.id,
+    label: row?.label ?? 'Home',
+    fullName: row?.full_name ?? '',
+    email: row?.email ?? '',
+    phone: row?.phone ?? '',
+    altPhone: row?.alt_phone ?? undefined,
+    street1: row?.street1 ?? '',
+    street2: row?.street2 ?? undefined,
+    city: row?.city ?? '',
+    state: row?.state ?? '',
+    postalCode: row?.postal_code ?? '',
+    country: row?.country ?? '',
+    isDefault: row?.is_default ?? false,
+  };
+}
 
 async function fetchSavedAddresses(): Promise<ShippingAddress[]> {
-  const response = await apiClient.get<{ success: boolean; data: { addresses: ShippingAddress[] } }>('/customer/addresses');
-  return response.data?.addresses ?? [];
+  const response = await apiClient.get<{
+    success: boolean;
+    data: { addresses: any[] };
+  }>('/customer/addresses');
+  return (response.data?.addresses ?? []).map(mapAddressRow);
 }
 
-async function saveShippingAddress(data: SaveShippingAddressRequest): Promise<SaveShippingAddressResponse> {
-  const response = await apiClient.post<{ success: boolean; message?: string; data: { address: ShippingAddress } }>('/customer/addresses', data);
-  const address = response.data?.address;
-  return {
-    shippingAddressId: address?.id || '',
-    updatedSummary: {
-      items: [],
-      itemCount: 0,
-      subtotal: 0,
-      shipping: 10,
-      vat: 0,
-      vatRate: 0.16,
-      total: 0,
-      currency: 'USD',
-    },
+async function saveShippingAddress(
+  address: ShippingAddress,
+): Promise<ShippingAddress> {
+  const payload = {
+    label: address.label || 'Home',
+    fullName: address.fullName,
+    email: address.email,
+    phone: address.phone,
+    altPhone: address.altPhone,
+    street1: address.street1,
+    street2: address.street2,
+    city: address.city,
+    state: address.state,
+    postalCode: address.postalCode,
+    country: address.country,
+    isDefault: address.isDefault,
   };
+  const response = await apiClient.post<{
+    success: boolean;
+    data: { address: any };
+  }>('/customer/addresses', payload);
+  return mapAddressRow(response.data?.address ?? {});
 }
 
-async function createPaymentIntent(data: CreatePaymentIntentRequest): Promise<PaymentIntent> {
-  const response = await apiClient.post<{ success: boolean; data: { paymentIntent: PaymentIntent } }>('/payment/initiate', data);
-  return response.data?.paymentIntent || {
-    id: '',
-    amount: 0,
-    currency: 'USD',
-    status: 'pending',
+/**
+ * Create order(s) from the cart.
+ * COD → orders are finalized immediately.
+ * Online → orders are created pending payment and `payment` contains the
+ * MaishaPay hosted checkout payload { url, fields }.
+ */
+async function createOrder(
+  data: CreateOrderRequest,
+): Promise<CreateOrderResponse> {
+  const response = await apiClient.post<{
+    success: boolean;
+    message?: string;
+    data: CreateOrderResponse;
+  }>('/customer/orders', {
     paymentMethod: data.paymentMethod,
-  };
-}
-
-async function confirmPayment(paymentIntentId: string): Promise<PaymentIntent> {
-  // Note: Payment confirmation is handled via POST /customer/orders/verify-payment
-  // This is a placeholder for the payment intent status check
-  const response = await apiClient.get<{ success: boolean; data: { paymentIntent: PaymentIntent } }>(`/payment/intents/${paymentIntentId}`);
-  return response.data?.paymentIntent || { id: paymentIntentId, amount: 0, currency: 'USD', status: 'succeeded', paymentMethod: 'card' };
-}
-
-async function confirmOrder(data: ConfirmOrderRequest): Promise<OrderConfirmation> {
-  // Note: This uses the useCreateOrder hook from useCustomer.ts which calls POST /customer/orders
-  // This is a legacy function kept for backward compatibility
-  const response = await apiClient.post<{ success: boolean; data: { orders: any[] } }>('/customer/orders', data);
-  const order = response.data?.orders?.[0];
+    shippingAddress: {
+      label: data.shippingAddress.label,
+      fullName: data.shippingAddress.fullName,
+      email: data.shippingAddress.email,
+      phone: data.shippingAddress.phone,
+      altPhone: data.shippingAddress.altPhone,
+      street1: data.shippingAddress.street1,
+      street2: data.shippingAddress.street2,
+      city: data.shippingAddress.city,
+      state: data.shippingAddress.state,
+      postalCode: data.shippingAddress.postalCode,
+      country: data.shippingAddress.country,
+    },
+    saveAddressToProfile: data.saveAddressToProfile ?? false,
+    currency: data.currency ?? 'USD',
+  });
   return {
-    orderId: order?.id || '',
-    orderNumber: order?.orderNumber || '',
-    status: order?.status || 'pending',
-    items: order?.items || [],
-    shippingAddress: order?.shippingAddress,
-    paymentMethod: order?.paymentMethod || 'card',
-    transactionId: order?.transactionId || '',
-    subtotal: order?.subtotal || 0,
-    shipping: order?.shipping || 0,
-    vat: order?.tax || 0,
-    total: order?.total || 0,
-    currency: order?.currency || 'USD',
-    estimatedDelivery: order?.estimatedDelivery || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-    createdAt: order?.createdAt || new Date().toISOString(),
+    orders: response.data?.orders ?? [],
+    payment: response.data?.payment,
   };
 }
 
-async function getOrder(orderId: string): Promise<OrderConfirmation> {
-  const response = await apiClient.get<{ success: boolean; data: { order: any } }>(`/customer/orders/${orderId}`);
-  const order = response.data?.order;
-  return {
-    orderId: order?.id || orderId,
-    orderNumber: order?.orderNumber || '',
-    status: order?.status || 'pending',
-    items: order?.items || [],
-    shippingAddress: order?.shippingAddress,
-    paymentMethod: order?.paymentMethod || 'card',
-    transactionId: order?.transactionId || '',
-    subtotal: order?.subtotal || 0,
-    shipping: order?.shipping || 0,
-    vat: order?.tax || 0,
-    total: order?.total || 0,
-    currency: order?.currency || 'USD',
-    estimatedDelivery: order?.estimatedDelivery || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-    createdAt: order?.createdAt || new Date().toISOString(),
-  };
+/**
+ * Re-initiate MaishaPay checkout for an existing pending order
+ * (e.g. retry after a cancelled payment).
+ */
+async function initiateMaishaPayment(
+  orderId: string,
+): Promise<MaishaPayCheckout> {
+  const response = await apiClient.post<{
+    success: boolean;
+    data: { url: string; fields: Record<string, string | number> };
+  }>('/payment/initiate', { orderId });
+  return { url: response.data?.url ?? '', fields: response.data?.fields ?? {} };
 }
 
-// React Query Hooks - all wired to real backend
+/** Verify a MaishaPay payment with the reference returned by the callback. */
+async function verifyPayment(data: VerifyPaymentRequest): Promise<PaymentResult> {
+  const response = await apiClient.post<{
+    success: boolean;
+    message?: string;
+    data: { orders: any[] };
+  }>('/customer/orders/verify-payment', {
+    sessionId: data.sessionId,
+    status: data.status,
+    transactionRefId: data.transactionRefId,
+  });
+  if (!response.success) {
+    return {
+      status: 'failed',
+      sessionId: data.sessionId,
+      message: response.message ?? 'Payment verification failed or pending',
+    };
+  }
+  return { status: 'success', sessionId: data.sessionId };
+}
+
+async function getOrder(orderId: string): Promise<any> {
+  const response = await apiClient.get<{
+    success: boolean;
+    data: { order: any };
+  }>(`/customer/orders/${orderId}`);
+  return response.data?.order ?? null;
+}
+
+// React Query Hooks
 
 export function useSavedAddresses() {
   return useQuery({
@@ -123,21 +166,21 @@ export function useSaveShippingAddress() {
   });
 }
 
-export function useCreatePaymentIntent() {
+export function useCreateOrder() {
   return useMutation({
-    mutationFn: createPaymentIntent,
+    mutationFn: createOrder,
   });
 }
 
-export function useConfirmPayment() {
+export function useInitiateMaishaPayment() {
   return useMutation({
-    mutationFn: confirmPayment,
+    mutationFn: initiateMaishaPayment,
   });
 }
 
-export function useConfirmOrder() {
+export function useVerifyPayment() {
   return useMutation({
-    mutationFn: confirmOrder,
+    mutationFn: verifyPayment,
   });
 }
 

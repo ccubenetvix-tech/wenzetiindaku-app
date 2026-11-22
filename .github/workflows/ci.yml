@@ -24,8 +24,8 @@ jobs:
       - run: npm ci
       - name: Lint
         run: npm run lint
-      - name: Typecheck (report only for now)
-        run: npx tsc --noEmit || echo "::warning::Typecheck has existing errors - tracked separately, not blocking"
+      - name: Typecheck
+        run: npx tsc --noEmit
       - name: Dependency audit (report only for now)
         run: npm audit --audit-level=high || echo "::warning::Audit found issues - tracked separately, not blocking"
 

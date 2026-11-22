@@ -5,7 +5,7 @@
 
 import { useCustomerProfile } from '@/src/api/useCustomer';
 import { Header } from '@/src/components';
-import { BorderRadius, Colors, FontSize, FontWeight, Shadow, Spacing } from '@/src/theme';
+import { BorderRadius, Colors, FontFamily, FontSize, Shadow, Spacing } from '@/src/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
@@ -111,18 +111,18 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm, paddingHorizontal: Spacing.xl,
     borderRadius: BorderRadius.lg,
   },
-  editBtnText: { color: Colors.white, fontSize: FontSize.md, fontWeight: FontWeight.semibold },
+  editBtnText: { color: Colors.white, fontSize: FontSize.md, fontFamily: FontFamily.semibold },
   card: {
     backgroundColor: Colors.white,
     marginHorizontal: Spacing.lg, marginBottom: Spacing.lg,
     borderRadius: BorderRadius.lg, padding: Spacing.lg,
     ...Shadow.sm,
   },
-  cardTitle: { fontSize: FontSize.md, fontWeight: FontWeight.bold, color: Colors.text.primary, marginBottom: Spacing.md },
+  cardTitle: { fontSize: FontSize.md, fontFamily: FontFamily.bold, color: Colors.text.primary, marginBottom: Spacing.md },
   row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: Spacing.sm, borderBottomWidth: 1, borderBottomColor: Colors.border.light },
   rowLabel: { fontSize: FontSize.sm, color: Colors.text.secondary },
-  rowValue: { fontSize: FontSize.sm, color: Colors.text.primary, fontWeight: FontWeight.medium, flex: 1, textAlign: 'right' },
+  rowValue: { fontSize: FontSize.sm, color: Colors.text.primary, fontFamily: FontFamily.medium, flex: 1, textAlign: 'right' },
   errorText: { fontSize: FontSize.md, color: Colors.text.secondary, marginTop: Spacing.md },
   retryBtn: { marginTop: Spacing.lg, backgroundColor: Colors.primary, paddingVertical: Spacing.sm, paddingHorizontal: Spacing.xl, borderRadius: BorderRadius.lg },
-  retryText: { color: Colors.white, fontSize: FontSize.md, fontWeight: FontWeight.semibold },
+  retryText: { color: Colors.white, fontSize: FontSize.md, fontFamily: FontFamily.semibold },
 });

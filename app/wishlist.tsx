@@ -6,7 +6,7 @@
 import { useSyncedCart } from '@/src/api/useCart';
 import { useRemoveFromWishlist, useWishlist } from '@/src/api/useCustomer';
 import { Header } from '@/src/components';
-import { BorderRadius, Colors, FontSize, FontWeight, Shadow, Spacing } from '@/src/theme';
+import { BorderRadius, Colors, FontFamily, FontSize, Shadow, Spacing } from '@/src/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
@@ -166,13 +166,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  outOfStockText: { color: Colors.white, fontSize: FontSize.xs, fontWeight: FontWeight.bold },
+  outOfStockText: { color: Colors.white, fontSize: FontSize.xs, fontFamily: FontFamily.bold },
   info: { flex: 1, padding: Spacing.md, justifyContent: 'space-between' },
-  name: { fontSize: FontSize.md, fontWeight: FontWeight.semibold, color: Colors.text.primary, marginBottom: 2 },
+  name: { fontSize: FontSize.md, fontFamily: FontFamily.semibold, color: Colors.text.primary, marginBottom: 2 },
   storeName: { fontSize: FontSize.sm, color: Colors.text.secondary, marginBottom: 4 },
   ratingRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
   rating: { fontSize: FontSize.sm, color: Colors.text.secondary, marginLeft: 3 },
-  price: { fontSize: FontSize.lg, fontWeight: FontWeight.bold, color: Colors.primary, marginBottom: Spacing.sm },
+  price: { fontSize: FontSize.lg, fontFamily: FontFamily.bold, color: Colors.primary, marginBottom: Spacing.sm },
   actions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   cartBtn: {
     flex: 1,
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   cartBtnDisabled: { backgroundColor: Colors.gray[300] },
-  cartBtnText: { color: Colors.white, fontSize: FontSize.sm, fontWeight: FontWeight.semibold },
+  cartBtnText: { color: Colors.white, fontSize: FontSize.sm, fontFamily: FontFamily.semibold },
   removeBtn: {
     width: 36,
     height: 36,
@@ -194,10 +194,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  emptyTitle: { fontSize: FontSize.lg, fontWeight: FontWeight.bold, color: Colors.text.primary, marginTop: Spacing.lg },
+  emptyTitle: { fontSize: FontSize.lg, fontFamily: FontFamily.bold, color: Colors.text.primary, marginTop: Spacing.lg },
   emptyText: { fontSize: FontSize.md, color: Colors.text.secondary, textAlign: 'center', marginTop: Spacing.sm },
   retryBtn: { marginTop: Spacing.lg, backgroundColor: Colors.primary, paddingVertical: Spacing.sm, paddingHorizontal: Spacing.xl, borderRadius: BorderRadius.lg },
-  retryText: { color: Colors.white, fontSize: FontSize.md, fontWeight: FontWeight.semibold },
+  retryText: { color: Colors.white, fontSize: FontSize.md, fontFamily: FontFamily.semibold },
   shopBtn: { marginTop: Spacing.lg, backgroundColor: Colors.primary, paddingVertical: Spacing.sm, paddingHorizontal: Spacing.xl, borderRadius: BorderRadius.lg },
-  shopBtnText: { color: Colors.white, fontSize: FontSize.md, fontWeight: FontWeight.semibold },
+  shopBtnText: { color: Colors.white, fontSize: FontSize.md, fontFamily: FontFamily.semibold },
 });

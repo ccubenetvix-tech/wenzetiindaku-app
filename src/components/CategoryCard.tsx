@@ -4,7 +4,7 @@
  */
 
 import { Category } from '@/src/api';
-import { BorderRadius, Colors, FontSize, FontWeight, Shadow, Spacing } from '@/src/theme';
+import { BorderRadius, Colors, FontFamily, FontSize, Shadow, Spacing } from '@/src/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
   },
   horizontalTitle: {
     fontSize: FontSize.md,
-    fontWeight: FontWeight.semibold,
+    fontFamily: FontFamily.semibold,
     color: Colors.text.primary,
     marginBottom: Spacing.xs,
   },
@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
   },
   gridTitle: {
     fontSize: FontSize.md,
-    fontWeight: FontWeight.semibold,
+    fontFamily: FontFamily.semibold,
     color: Colors.text.primary,
     marginBottom: Spacing.xs,
   },
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
   productCount: {
     fontSize: FontSize.sm,
     color: Colors.primary,
-    fontWeight: FontWeight.medium,
+    fontFamily: FontFamily.medium,
   },
 });
 

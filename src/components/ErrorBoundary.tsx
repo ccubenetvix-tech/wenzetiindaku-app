@@ -3,7 +3,7 @@
  * Catches unhandled render errors and shows a friendly recovery screen.
  */
 
-import { BorderRadius, Colors, FontSize, FontWeight, Spacing } from '@/src/theme';
+import { BorderRadius, Colors, FontFamily, FontSize, Spacing } from '@/src/theme';
 import React, { Component, ReactNode } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
   },
   emoji: { fontSize: 48, marginBottom: Spacing.lg },
   title: {
-    fontSize: FontSize['2xl'], fontWeight: FontWeight.bold,
+    fontSize: FontSize['2xl'], fontFamily: FontFamily.bold,
     color: Colors.text.primary, marginBottom: Spacing.md, textAlign: 'center',
   },
   message: {
@@ -76,5 +76,5 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary, paddingVertical: Spacing.md,
     paddingHorizontal: Spacing['3xl'], borderRadius: BorderRadius.lg,
   },
-  btnText: { color: Colors.white, fontSize: FontSize.md, fontWeight: FontWeight.bold },
+  btnText: { color: Colors.white, fontSize: FontSize.md, fontFamily: FontFamily.bold },
 });

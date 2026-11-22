@@ -87,15 +87,25 @@ export interface User {
   createdAt: string;
 }
 
+/**
+ * Canonical address shape used across the backend (customer_addresses via API
+ * mapping, and orders.shipping_address JSONB). The backend stores snake_case
+ * rows (full_name, street1, postal_code…) — API hooks map them to this shape.
+ */
 export interface Address {
-  id: string;
-  name: string;
-  street: string;
+  id?: string;
+  label?: string;
+  fullName: string;
+  email?: string;
+  phone?: string;
+  altPhone?: string;
+  street1: string;
+  street2?: string;
   city: string;
-  state?: string;
-  country: string;
+  state: string;
   postalCode: string;
-  isDefault: boolean;
+  country: string;
+  isDefault?: boolean;
 }
 
 // API Response Types
@@ -141,12 +151,13 @@ export interface Order {
   id: string;
   orderNumber: string;
   status: OrderStatus;
+  paymentStatus?: string;
   items: OrderItem[];
   subtotal: number;
   tax: number;
   shipping: number;
   total: number;
-  shippingAddress: Address;
+  shippingAddress?: Address;
   paymentMethod: string;
   createdAt: string;
   updatedAt: string;

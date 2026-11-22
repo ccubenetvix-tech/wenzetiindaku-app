@@ -3,6 +3,7 @@
  * GET /api/customer/addresses + add/delete/set-default
  */
 
+import { useAuth } from '@/contexts/auth-context';
 import {
   useAddAddress,
   useCustomerAddresses,
@@ -10,7 +11,7 @@ import {
   useSetDefaultAddress,
 } from '@/src/api/useCustomer';
 import { Header } from '@/src/components';
-import { BorderRadius, Colors, FontSize, FontWeight, Shadow, Spacing } from '@/src/theme';
+import { BorderRadius, Colors, FontFamily, FontSize, Shadow, Spacing } from '@/src/theme';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
@@ -28,9 +29,20 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const emptyForm = { name: '', street: '', city: '', state: '', country: '', postalCode: '' };
+const emptyForm = {
+  label: 'Home',
+  fullName: '',
+  phone: '',
+  street1: '',
+  street2: '',
+  city: '',
+  state: '',
+  postalCode: '',
+  country: 'Democratic Republic of Congo',
+};
 
 export default function AddressesScreen() {
+  const { user } = useAuth();
   const { data: addresses, isLoading, isError, refetch } = useCustomerAddresses();
   const addAddress = useAddAddress();
   const deleteAddress = useDeleteAddress();
@@ -39,13 +51,27 @@ export default function AddressesScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [form, setForm] = useState(emptyForm);
 
+  const setField = (key: keyof typeof emptyForm, value: string) =>
+    setForm((f) => ({ ...f, [key]: value }));
+
   const handleAdd = async () => {
-    if (!form.name.trim() || !form.street.trim() || !form.city.trim() || !form.country.trim()) {
-      Alert.alert('Validation', 'Name, street, city and country are required.');
+    if (!form.fullName.trim() || !form.phone.trim() || !form.street1.trim() || !form.city.trim() || !form.state.trim() || !form.postalCode.trim() || !form.country.trim()) {
+      Alert.alert('Validation', 'Full name, phone, street, city, state, postal code and country are required.');
       return;
     }
     try {
-      await addAddress.mutateAsync({ ...form });
+      await addAddress.mutateAsync({
+        label: form.label,
+        fullName: form.fullName.trim(),
+        email: user?.email || '',
+        phone: form.phone.trim(),
+        street1: form.street1.trim(),
+        street2: form.street2.trim() || undefined,
+        city: form.city.trim(),
+        state: form.state.trim(),
+        postalCode: form.postalCode.trim(),
+        country: form.country.trim(),
+      });
       setModalVisible(false);
       setForm(emptyForm);
     } catch (e: any) {
@@ -90,7 +116,7 @@ export default function AddressesScreen() {
                 <View style={styles.cardHeader}>
                   <View style={styles.nameRow}>
                     <Ionicons name="location" size={18} color={Colors.primary} />
-                    <Text style={styles.addrName}>{addr.name}</Text>
+                    <Text style={styles.addrName}>{addr.label || 'Address'}</Text>
                     {addr.isDefault && (
                       <View style={styles.defaultBadge}>
                         <Text style={styles.defaultBadgeText}>Default</Text>
@@ -108,7 +134,9 @@ export default function AddressesScreen() {
                     </TouchableOpacity>
                   </View>
                 </View>
-                <Text style={styles.addrLine}>{addr.street}</Text>
+                <Text style={styles.addrName}>{addr.fullName}</Text>
+                {addr.phone ? <Text style={styles.addrLine}>{addr.phone}</Text> : null}
+                <Text style={styles.addrLine}>{[addr.street1, addr.street2].filter(Boolean).join(', ')}</Text>
                 <Text style={styles.addrLine}>{[addr.city, addr.state, addr.postalCode].filter(Boolean).join(', ')}</Text>
                 <Text style={styles.addrLine}>{addr.country}</Text>
               </View>
@@ -133,25 +161,46 @@ export default function AddressesScreen() {
               </TouchableOpacity>
             </View>
             <ScrollView contentContainerStyle={styles.modalScroll}>
+              {/* Address type chips */}
+              <View style={styles.chipsRow}>
+                {(['Home', 'Work', 'Other'] as const).map(label => (
+                  <TouchableOpacity
+                    key={label}
+                    style={[styles.chip, form.label === label && styles.chipActive]}
+                    onPress={() => setField('label', label)}
+                  >
+                    <Text style={[styles.chipText, form.label === label && styles.chipTextActive]}>
+                      {label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
               {([
-                { key: 'name', label: 'Label (e.g. Home, Work)', placeholder: 'Home' },
-                { key: 'street', label: 'Street Address', placeholder: '123 Main St' },
+                { key: 'fullName', label: 'Full Name', placeholder: 'John Doe' },
+                { key: 'phone', label: 'Phone Number', placeholder: '+243 XXX XXX XXX', keyboard: 'phone-pad' as const },
+                { key: 'street1', label: 'House No / Street Address', placeholder: '123 Main St' },
+                { key: 'street2', label: 'Apartment / Area (optional)', placeholder: 'Apt 4B, Downtown' },
                 { key: 'city', label: 'City', placeholder: 'Kinshasa' },
-                { key: 'state', label: 'State / Province (optional)', placeholder: '' },
-                { key: 'country', label: 'Country', placeholder: 'DRC' },
-                { key: 'postalCode', label: 'Postal Code (optional)', placeholder: '' },
+                { key: 'state', label: 'State / Province', placeholder: 'Kinshasa' },
+                { key: 'postalCode', label: 'Postal Code', placeholder: '12345', keyboard: 'numeric' as const },
+                { key: 'country', label: 'Country', placeholder: 'Democratic Republic of Congo' },
               ] as const).map(field => (
                 <View key={field.key}>
                   <Text style={styles.label}>{field.label}</Text>
                   <TextInput
                     style={styles.input}
                     value={form[field.key]}
-                    onChangeText={val => setForm(f => ({ ...f, [field.key]: val }))}
+                    onChangeText={val => setField(field.key, val)}
                     placeholder={field.placeholder}
                     placeholderTextColor={Colors.text.tertiary}
+                    keyboardType={'keyboard' in field ? field.keyboard : 'default'}
+                    autoCapitalize={field.key === 'phone' || field.key === 'postalCode' ? 'none' : 'sentences'}
                   />
                 </View>
               ))}
+              <Text style={styles.modalHint}>
+                Saving to account email: {user?.email || '—'}
+              </Text>
               <TouchableOpacity
                 style={[styles.saveBtn, addAddress.isPending && styles.saveBtnDisabled]}
                 onPress={handleAdd}
@@ -176,7 +225,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing['2xl'] },
   scroll: { padding: Spacing.lg, paddingBottom: Spacing['4xl'], gap: Spacing.md },
   empty: { alignItems: 'center', paddingTop: Spacing['5xl'] },
-  emptyTitle: { fontSize: FontSize.lg, fontWeight: FontWeight.bold, color: Colors.text.primary, marginTop: Spacing.lg },
+  emptyTitle: { fontSize: FontSize.lg, fontFamily: FontFamily.bold, color: Colors.text.primary, marginTop: Spacing.lg },
   emptyText: { fontSize: FontSize.md, color: Colors.text.secondary, marginTop: Spacing.sm },
   card: {
     backgroundColor: Colors.white, borderRadius: BorderRadius.lg,
@@ -186,9 +235,9 @@ const styles = StyleSheet.create({
   cardDefault: { borderColor: Colors.primary, borderWidth: 2 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: Spacing.sm },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, flex: 1 },
-  addrName: { fontSize: FontSize.md, fontWeight: FontWeight.bold, color: Colors.text.primary },
+  addrName: { fontSize: FontSize.md, fontFamily: FontFamily.bold, color: Colors.text.primary },
   defaultBadge: { backgroundColor: Colors.primary + '20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: BorderRadius.sm },
-  defaultBadgeText: { fontSize: FontSize.xs, color: Colors.primary, fontWeight: FontWeight.semibold },
+  defaultBadgeText: { fontSize: FontSize.xs, color: Colors.primary, fontFamily: FontFamily.semibold },
   cardActions: { flexDirection: 'row', gap: Spacing.xs },
   iconBtn: { padding: 4 },
   addrLine: { fontSize: FontSize.sm, color: Colors.text.secondary, marginBottom: 2 },
@@ -197,14 +246,27 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary, paddingVertical: Spacing.md,
     borderRadius: BorderRadius.lg, marginTop: Spacing.md,
   },
-  addBtnText: { color: Colors.white, fontSize: FontSize.md, fontWeight: FontWeight.bold },
+  addBtnText: { color: Colors.white, fontSize: FontSize.md, fontFamily: FontFamily.bold },
   errorText: { fontSize: FontSize.md, color: Colors.text.secondary, marginTop: Spacing.md },
   retryBtn: { marginTop: Spacing.lg, backgroundColor: Colors.primary, paddingVertical: Spacing.sm, paddingHorizontal: Spacing.xl, borderRadius: BorderRadius.lg },
-  retryText: { color: Colors.white, fontSize: FontSize.md, fontWeight: FontWeight.semibold },
+  retryText: { color: Colors.white, fontSize: FontSize.md, fontFamily: FontFamily.semibold },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: Spacing.lg, borderBottomWidth: 1, borderBottomColor: Colors.border.light },
-  modalTitle: { fontSize: FontSize.xl, fontWeight: FontWeight.bold, color: Colors.text.primary },
+  modalTitle: { fontSize: FontSize.xl, fontFamily: FontFamily.bold, color: Colors.text.primary },
+  chipsRow: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.sm },
+  chip: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+    borderColor: Colors.border.medium,
+    backgroundColor: Colors.white,
+  },
+  chipActive: { borderColor: Colors.primary, backgroundColor: Colors.primaryFaded },
+  chipText: { fontSize: FontSize.sm, fontFamily: FontFamily.medium, color: Colors.text.secondary },
+  chipTextActive: { color: Colors.primary, fontFamily: FontFamily.semibold },
+  modalHint: { fontSize: FontSize.xs, fontFamily: FontFamily.normal, color: Colors.text.tertiary, marginTop: Spacing.md },
   modalScroll: { padding: Spacing.lg, paddingBottom: Spacing['4xl'], gap: Spacing.xs },
-  label: { fontSize: FontSize.sm, fontWeight: FontWeight.semibold, color: Colors.text.secondary, marginBottom: Spacing.xs, marginTop: Spacing.md },
+  label: { fontSize: FontSize.sm, fontFamily: FontFamily.semibold, color: Colors.text.secondary, marginBottom: Spacing.xs, marginTop: Spacing.md },
   input: {
     borderWidth: 1, borderColor: Colors.border.medium, borderRadius: BorderRadius.md,
     paddingVertical: Spacing.sm, paddingHorizontal: Spacing.md,
@@ -212,5 +274,5 @@ const styles = StyleSheet.create({
   },
   saveBtn: { backgroundColor: Colors.primary, paddingVertical: Spacing.md, borderRadius: BorderRadius.lg, alignItems: 'center', marginTop: Spacing.xl },
   saveBtnDisabled: { opacity: 0.6 },
-  saveBtnText: { color: Colors.white, fontSize: FontSize.lg, fontWeight: FontWeight.bold },
+  saveBtnText: { color: Colors.white, fontSize: FontSize.lg, fontFamily: FontFamily.bold },
 });

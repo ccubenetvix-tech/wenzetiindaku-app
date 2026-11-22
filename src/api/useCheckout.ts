@@ -8,9 +8,9 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import {
     CheckoutStep,
+    MaishaPayCheckout,
     OrderConfirmation,
     OrderSummary,
-    PaymentIntent,
     PaymentMethod,
     ShippingAddress,
     ShippingAddressFormErrors
@@ -32,7 +32,7 @@ interface CheckoutState {
   // Payment
   paymentMethods: PaymentMethod[];
   selectedPaymentMethod: PaymentMethod | null;
-  paymentIntent: PaymentIntent | null;
+  maishapayCheckout: MaishaPayCheckout | null;
 
   // Order Summary
   orderSummary: OrderSummary | null;
@@ -51,7 +51,7 @@ interface CheckoutState {
   selectSavedAddress: (addressId: string) => void;
   setPaymentMethods: (methods: PaymentMethod[]) => void;
   setSelectedPaymentMethod: (method: PaymentMethod) => void;
-  setPaymentIntent: (intent: PaymentIntent) => void;
+  setMaishapayCheckout: (checkout: MaishaPayCheckout | null) => void;
   setOrderSummary: (summary: OrderSummary) => void;
   setOrderConfirmation: (confirmation: OrderConfirmation) => void;
   setLoading: (loading: boolean) => void;
@@ -66,16 +66,16 @@ const FREE_SHIPPING_THRESHOLD = 50;
 const SHIPPING_COST = 10;
 
 const initialShippingAddress: ShippingAddress = {
-  firstName: '',
-  lastName: '',
+  label: 'Home',
+  fullName: '',
   email: '',
   phone: '',
-  streetAddress: '',
-  apartment: '',
+  street1: '',
+  street2: '',
   city: '',
   state: '',
   postalCode: '',
-  country: 'CD',
+  country: 'Democratic Republic of Congo',
   saveToProfile: false,
 };
 
@@ -89,7 +89,7 @@ const initialState = {
   shippingErrors: {},
   paymentMethods: [],
   selectedPaymentMethod: null,
-  paymentIntent: null,
+  maishapayCheckout: null,
   orderSummary: null,
   cartItems: [],
   orderConfirmation: null,
@@ -127,15 +127,12 @@ export const useCheckoutStore = create<CheckoutState>()(
         const errors: ShippingAddressFormErrors = {};
 
         if (!address) {
-          set({ shippingErrors: { firstName: 'Address required' } });
+          set({ shippingErrors: { fullName: 'Address required' } });
           return false;
         }
 
-        if (!address.firstName?.trim()) {
-          errors.firstName = 'First name is required';
-        }
-        if (!address.lastName?.trim()) {
-          errors.lastName = 'Last name is required';
+        if (!address.fullName?.trim()) {
+          errors.fullName = 'Full name is required';
         }
         if (!address.email?.trim()) {
           errors.email = 'Email is required';
@@ -147,8 +144,8 @@ export const useCheckoutStore = create<CheckoutState>()(
         } else if (!/^[\d\s\+\-\(\)]{7,20}$/.test(address.phone)) {
           errors.phone = 'Please enter a valid phone number';
         }
-        if (!address.streetAddress?.trim()) {
-          errors.streetAddress = 'Street address is required';
+        if (!address.street1?.trim()) {
+          errors.street1 = 'Street address is required';
         }
         if (!address.city?.trim()) {
           errors.city = 'City is required';
@@ -191,8 +188,8 @@ export const useCheckoutStore = create<CheckoutState>()(
         set({ selectedPaymentMethod: method, error: null });
       },
 
-      setPaymentIntent: (intent: PaymentIntent) => {
-        set({ paymentIntent: intent });
+      setMaishapayCheckout: (checkout: MaishaPayCheckout | null) => {
+        set({ maishapayCheckout: checkout });
       },
 
       setOrderSummary: (summary: OrderSummary) => {
@@ -221,11 +218,7 @@ export const useCheckoutStore = create<CheckoutState>()(
 
       canProceedToReview: (): boolean => {
         const state = get();
-        return !!(
-          state.shippingAddress &&
-          state.selectedPaymentMethod &&
-          state.paymentIntent?.status === 'succeeded'
-        );
+        return !!(state.shippingAddress && state.selectedPaymentMethod);
       },
     }),
     {
