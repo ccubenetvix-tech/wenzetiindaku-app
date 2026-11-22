@@ -6,7 +6,7 @@
  */
 
 import { ApiConfig } from '@/src/config';
-import { BorderRadius, Colors, FontSize, FontWeight, Shadow, Spacing } from '@/src/theme';
+import { BorderRadius, Colors, FontFamily, FontSize, Shadow, Spacing } from '@/src/theme';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -184,9 +184,9 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.white },
   inner: { flex: 1 },
   content: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing['2xl'] },
-  title: { fontSize: FontSize['3xl'], fontWeight: FontWeight.bold, color: Colors.text.primary, marginBottom: Spacing.sm },
+  title: { fontSize: FontSize['3xl'], fontFamily: FontFamily.bold, color: Colors.text.primary, marginBottom: Spacing.sm },
   subtitle: { fontSize: FontSize.md, color: Colors.text.secondary, textAlign: 'center', marginBottom: Spacing['3xl'], lineHeight: 22 },
-  emailHighlight: { color: Colors.primary, fontWeight: FontWeight.semibold },
+  emailHighlight: { color: Colors.primary, fontFamily: FontFamily.semibold },
   otpRow: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing['2xl'] },
   otpBox: {
     width: 46, height: 56, borderRadius: BorderRadius.md,
@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
   },
   otpBoxActive: { borderColor: Colors.primary },
   otpBoxFilled: { borderColor: Colors.primary, backgroundColor: Colors.primaryFaded },
-  otpChar: { fontSize: FontSize['2xl'], fontWeight: FontWeight.bold, color: Colors.text.primary },
+  otpChar: { fontSize: FontSize['2xl'], fontFamily: FontFamily.bold, color: Colors.text.primary },
   hiddenInput: { position: 'absolute', opacity: 0, width: 1, height: 1 },
   verifyBtn: {
     width: '100%', backgroundColor: Colors.primary,
@@ -205,10 +205,10 @@ const styles = StyleSheet.create({
     alignItems: 'center', marginBottom: Spacing.xl,
   },
   verifyBtnDisabled: { opacity: 0.5 },
-  verifyBtnText: { color: Colors.white, fontSize: FontSize.lg, fontWeight: FontWeight.bold },
+  verifyBtnText: { color: Colors.white, fontSize: FontSize.lg, fontFamily: FontFamily.bold },
   resendRow: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.xl },
   resendLabel: { fontSize: FontSize.md, color: Colors.text.secondary },
-  resendLink: { fontSize: FontSize.md, color: Colors.primary, fontWeight: FontWeight.semibold },
+  resendLink: { fontSize: FontSize.md, color: Colors.primary, fontFamily: FontFamily.semibold },
   countdown: { fontSize: FontSize.md, color: Colors.text.tertiary },
   backLink: { marginTop: Spacing.md },
   backLinkText: { fontSize: FontSize.md, color: Colors.text.secondary },

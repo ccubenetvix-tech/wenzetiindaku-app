@@ -1,22 +1,27 @@
 /**
  * Checkout Types for Wenzetiindaku Marketplace
- * Defines all types for the checkout flow
+ * Defines all types for the checkout flow.
+ *
+ * Address shape and payment methods follow the real backend contract:
+ * - POST /customer/orders      { paymentMethod: 'cod' | 'online', shippingAddress, saveAddressToProfile }
+ * - POST /payment/initiate     { orderId } → { url, fields } (MaishaPay hosted checkout)
+ * - POST /customer/orders/verify-payment { sessionId, status, transactionRefId }
  */
-
-import { CartItem } from './types';
 
 // Checkout Step Types
 export type CheckoutStep = 'shipping' | 'payment' | 'review';
 
-// Shipping Address Types
+// Shipping Address Types — canonical shape used by the backend
+// (orders.shipping_address JSONB + customer_addresses via API mapping)
 export interface ShippingAddress {
   id?: string;
-  firstName: string;
-  lastName: string;
+  label?: string; // Home / Work / Other
+  fullName: string;
   email: string;
   phone: string;
-  streetAddress: string;
-  apartment?: string;
+  altPhone?: string;
+  street1: string;
+  street2?: string;
   city: string;
   state: string;
   postalCode: string;
@@ -26,76 +31,56 @@ export interface ShippingAddress {
 }
 
 export interface ShippingAddressFormErrors {
-  firstName?: string;
-  lastName?: string;
+  fullName?: string;
   email?: string;
   phone?: string;
-  streetAddress?: string;
+  street1?: string;
   city?: string;
   state?: string;
   postalCode?: string;
   country?: string;
 }
 
-// Payment Method Types
-export type PaymentMethodType = 
-  | 'card' 
-  | 'mobile_money' 
-  | 'bank_transfer' 
-  | 'cash_on_delivery'
-  | 'cod'
-  | 'paypal'
-  | 'stripe'
-  | 'flutterwave';
+// Payment Method Types — the backend supports COD and MaishaPay online checkout
+export type PaymentMethodType = 'online' | 'cod' | 'maishapay';
 
 export interface PaymentMethod {
   id: string;
   type: PaymentMethodType;
   name: string;
   description?: string;
-  icon?: string;
   enabled: boolean;
-  isAvailable?: boolean;
-  config?: {
-    publicKey?: string;
-    clientToken?: string;
-    supportedNetworks?: string[];
-  };
 }
 
-export interface PaymentIntent {
-  id: string;
-  clientSecret?: string;
-  amount: number;
-  currency: string;
-  status: PaymentIntentStatus;
-  paymentMethod: PaymentMethodType;
-  redirectUrl?: string;
-  metadata?: Record<string, any>;
+export const PAYMENT_METHODS: PaymentMethod[] = [
+  {
+    id: 'maishapay',
+    type: 'maishapay',
+    name: 'Pay Online (MaishaPay)',
+    description: 'Pay securely online with card or mobile money',
+    enabled: true,
+  },
+  {
+    id: 'cod',
+    type: 'cod',
+    name: 'Cash on Delivery',
+    description: 'Pay with cash when your order arrives',
+    enabled: true,
+  },
+];
+
+// MaishaPay hosted checkout payload returned by the backend
+// ({ url, fields } — the fields are POSTed to the url)
+export interface MaishaPayCheckout {
+  url: string;
+  fields: Record<string, string | number>;
 }
 
-export type PaymentIntentStatus = 
-  | 'pending'
-  | 'processing'
-  | 'requires_action'
-  | 'succeeded'
-  | 'failed'
-  | 'cancelled';
-
-// Card Details (tokenized, never store raw card data)
-export interface CardDetails {
-  token: string;
-  last4: string;
-  brand: string;
-  expiryMonth: number;
-  expiryYear: number;
-}
-
-// Mobile Money Details
-export interface MobileMoneyDetails {
-  provider: string;
-  phoneNumber: string;
-  country: string;
+export interface PaymentResult {
+  status: 'success' | 'failed' | 'cancelled';
+  sessionId?: string;
+  transactionRefId?: string;
+  message?: string;
 }
 
 // Order Types for Checkout
@@ -122,20 +107,6 @@ export interface OrderSummary {
   currency: string;
 }
 
-// Checkout Session
-export interface CheckoutSession {
-  id: string;
-  cartId: string;
-  userId?: string;
-  currentStep: CheckoutStep;
-  shippingAddress?: ShippingAddress;
-  selectedPaymentMethod?: PaymentMethodType;
-  paymentIntent?: PaymentIntent;
-  orderSummary: OrderSummary;
-  createdAt: string;
-  expiresAt: string;
-}
-
 // Order Confirmation
 export interface OrderConfirmation {
   orderId: string;
@@ -155,48 +126,26 @@ export interface OrderConfirmation {
 }
 
 // API Request/Response Types
-export interface CreateCheckoutSessionRequest {
-  cartId?: string;
-  items?: CartItem[];
-}
-
-export interface CreateCheckoutSessionResponse {
-  session: CheckoutSession;
-}
-
-export interface SaveShippingAddressRequest {
-  sessionId: string;
-  address: ShippingAddress;
-}
-
-export interface SaveShippingAddressResponse {
-  shippingAddressId: string;
-  updatedSummary: OrderSummary;
-}
-
-export interface GetPaymentMethodsResponse {
-  methods: PaymentMethod[];
-}
-
-export interface CreatePaymentIntentRequest {
-  sessionId: string;
+export interface CreateOrderRequest {
   paymentMethod: PaymentMethodType;
-  cardDetails?: CardDetails;
-  mobileMoneyDetails?: MobileMoneyDetails;
+  shippingAddress: ShippingAddress;
+  saveAddressToProfile?: boolean;
+  currency?: string;
 }
 
-export interface CreatePaymentIntentResponse {
-  paymentIntent: PaymentIntent;
+export interface CreateOrderResponse {
+  orders: any[];
+  payment?: {
+    method: string;
+    url?: string;
+    fields?: Record<string, string | number>;
+  };
 }
 
-export interface ConfirmOrderRequest {
+export interface VerifyPaymentRequest {
   sessionId: string;
-  paymentIntentId: string;
-  transactionId?: string;
-}
-
-export interface ConfirmOrderResponse {
-  order: OrderConfirmation;
+  status?: string;
+  transactionRefId?: string;
 }
 
 // Validation Helpers
@@ -214,11 +163,4 @@ export const COUNTRY_LIST = [
   { code: 'CM', name: 'Cameroon' },
   { code: 'CI', name: 'Ivory Coast' },
   { code: 'SN', name: 'Senegal' },
-];
-
-export const MOBILE_MONEY_PROVIDERS = [
-  { id: 'mpesa', name: 'M-Pesa', countries: ['KE', 'TZ', 'CD'] },
-  { id: 'orange_money', name: 'Orange Money', countries: ['CD', 'CM', 'CI', 'SN'] },
-  { id: 'airtel_money', name: 'Airtel Money', countries: ['CD', 'KE', 'NG'] },
-  { id: 'mtn_momo', name: 'MTN Mobile Money', countries: ['GH', 'CM', 'CI'] },
 ];

@@ -4,7 +4,7 @@
  */
 
 import { OrderSummary } from '@/src/api/checkoutTypes';
-import { BorderRadius, Colors, FontSize, FontWeight, Shadow, Spacing } from '@/src/theme';
+import { BorderRadius, Colors, FontFamily, FontSize, Shadow, Spacing } from '@/src/theme';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: FontSize.lg,
-    fontWeight: FontWeight.semibold,
+    fontFamily: FontFamily.semibold,
     color: Colors.text.primary,
   },
   itemsList: {
@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
   },
   itemPrice: {
     fontSize: FontSize.sm,
-    fontWeight: FontWeight.medium,
+    fontFamily: FontFamily.medium,
     color: Colors.text.primary,
   },
   divider: {
@@ -187,14 +187,14 @@ const styles = StyleSheet.create({
   },
   freeShipping: {
     color: Colors.secondary,
-    fontWeight: FontWeight.medium,
+    fontFamily: FontFamily.medium,
   },
   discountLabel: {
     color: Colors.secondary,
   },
   discountValue: {
     color: Colors.secondary,
-    fontWeight: FontWeight.medium,
+    fontFamily: FontFamily.medium,
   },
   totalRow: {
     flexDirection: 'row',
@@ -203,12 +203,12 @@ const styles = StyleSheet.create({
   },
   totalLabel: {
     fontSize: FontSize.lg,
-    fontWeight: FontWeight.semibold,
+    fontFamily: FontFamily.semibold,
     color: Colors.text.primary,
   },
   totalValue: {
     fontSize: FontSize.xl,
-    fontWeight: FontWeight.bold,
+    fontFamily: FontFamily.bold,
     color: Colors.primary,
   },
   badges: {

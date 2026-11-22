@@ -5,7 +5,7 @@
 
 import { useCustomerOrder } from '@/src/api/useCustomer';
 import { Header } from '@/src/components';
-import { BorderRadius, Colors, FontSize, FontWeight, Shadow, Spacing } from '@/src/theme';
+import { BorderRadius, Colors, FontFamily, FontSize, Shadow, Spacing } from '@/src/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
 import React from 'react';
@@ -102,8 +102,11 @@ export default function OrderDetailScreen() {
         {order.shippingAddress && (
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>Shipping Address</Text>
-            <Text style={styles.addressText}>{order.shippingAddress.name}</Text>
-            <Text style={styles.addressText}>{order.shippingAddress.street}</Text>
+            <Text style={styles.addressText}>{order.shippingAddress.fullName}</Text>
+            <Text style={styles.addressText}>
+              {order.shippingAddress.street1}
+              {order.shippingAddress.street2 ? `, ${order.shippingAddress.street2}` : ''}
+            </Text>
             <Text style={styles.addressText}>
               {order.shippingAddress.city}{order.shippingAddress.state ? `, ${order.shippingAddress.state}` : ''} {order.shippingAddress.postalCode}
             </Text>
@@ -134,28 +137,28 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scroll: { padding: Spacing.lg, gap: Spacing.md },
   card: { backgroundColor: Colors.white, borderRadius: BorderRadius.lg, padding: Spacing.lg, ...Shadow.sm },
-  sectionTitle: { fontSize: FontSize.md, fontWeight: FontWeight.bold, color: Colors.text?.primary || '#111827', marginBottom: Spacing.md },
+  sectionTitle: { fontSize: FontSize.md, fontFamily: FontFamily.bold, color: Colors.text?.primary || '#111827', marginBottom: Spacing.md },
   stepsRow: { flexDirection: 'row', alignItems: 'center' },
   stepItem: { alignItems: 'center', flex: 1 },
   stepDot: { width: 24, height: 24, borderRadius: 12, backgroundColor: Colors.gray?.[200] || '#E5E7EB', alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
   stepDotActive: { backgroundColor: Colors.primary },
   stepLabel: { fontSize: 9, color: Colors.text?.secondary || '#6B7280', textAlign: 'center' },
-  stepLabelActive: { color: Colors.primary, fontWeight: FontWeight.semibold },
+  stepLabelActive: { color: Colors.primary, fontFamily: FontFamily.semibold },
   stepLine: { flex: 1, height: 2, backgroundColor: Colors.gray?.[200] || '#E5E7EB', marginBottom: 16 },
   stepLineActive: { backgroundColor: Colors.primary },
   itemRow: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.md },
   itemImage: { width: 60, height: 60, borderRadius: BorderRadius.md, marginRight: Spacing.md },
   itemImagePlaceholder: { width: 60, height: 60, borderRadius: BorderRadius.md, backgroundColor: Colors.gray?.[100] || '#F3F4F6', alignItems: 'center', justifyContent: 'center', marginRight: Spacing.md },
   itemInfo: { flex: 1 },
-  itemName: { fontSize: FontSize.sm, fontWeight: FontWeight.medium, color: Colors.text?.primary || '#111827' },
+  itemName: { fontSize: FontSize.sm, fontFamily: FontFamily.medium, color: Colors.text?.primary || '#111827' },
   itemQty: { fontSize: FontSize.xs, color: Colors.text?.secondary || '#6B7280', marginTop: 2 },
-  itemPrice: { fontSize: FontSize.md, fontWeight: FontWeight.bold, color: Colors.text?.primary || '#111827' },
+  itemPrice: { fontSize: FontSize.md, fontFamily: FontFamily.bold, color: Colors.text?.primary || '#111827' },
   addressText: { fontSize: FontSize.sm, color: Colors.text?.secondary || '#6B7280', lineHeight: 22 },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.sm },
   summaryLabel: { fontSize: FontSize.sm, color: Colors.text?.secondary || '#6B7280' },
   summaryValue: { fontSize: FontSize.sm, color: Colors.text?.primary || '#111827' },
   totalRow: { borderTopWidth: 1, borderTopColor: Colors.border?.light || '#E5E7EB', paddingTop: Spacing.sm, marginTop: Spacing.sm },
-  totalLabel: { fontSize: FontSize.md, fontWeight: FontWeight.bold, color: Colors.text?.primary || '#111827' },
-  totalValue: { fontSize: FontSize.lg, fontWeight: FontWeight.bold, color: Colors.primary },
+  totalLabel: { fontSize: FontSize.md, fontFamily: FontFamily.bold, color: Colors.text?.primary || '#111827' },
+  totalValue: { fontSize: FontSize.lg, fontFamily: FontFamily.bold, color: Colors.primary },
   errorText: { fontSize: FontSize.md, color: Colors.text?.secondary || '#6B7280', marginTop: Spacing.md },
 });

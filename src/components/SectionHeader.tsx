@@ -3,7 +3,7 @@
  * Reusable section header with title and "View All" action
  */
 
-import { Colors, FontSize, FontWeight, Spacing } from '@/src/theme';
+import { Colors, FontFamily, FontSize, Spacing } from '@/src/theme';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import {
@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: FontSize['2xl'],
-    fontWeight: FontWeight.bold,
+    fontFamily: FontFamily.bold,
     color: Colors.text.primary,
     marginBottom: Spacing.xs,
   },
@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
   viewAllText: {
     fontSize: FontSize.md,
     color: Colors.primary,
-    fontWeight: FontWeight.medium,
+    fontFamily: FontFamily.medium,
   },
 });
 

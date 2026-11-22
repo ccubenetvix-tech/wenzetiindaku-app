@@ -16,6 +16,75 @@ export const customerKeys = {
   wishlist: ["customer", "wishlist"] as const,
 };
 
+// ─── API Row Mappers (backend returns snake_case) ────────────────────────────
+
+/** Map a snake_case customer_addresses row to the canonical Address shape */
+export function mapAddressRow(row: any): Address {
+  return {
+    id: row?.id,
+    label: row?.label ?? "Home",
+    fullName: row?.full_name ?? "",
+    email: row?.email ?? "",
+    phone: row?.phone ?? "",
+    altPhone: row?.alt_phone ?? undefined,
+    street1: row?.street1 ?? "",
+    street2: row?.street2 ?? undefined,
+    city: row?.city ?? "",
+    state: row?.state ?? "",
+    postalCode: row?.postal_code ?? "",
+    country: row?.country ?? "",
+    isDefault: row?.is_default ?? false,
+  };
+}
+
+/**
+ * Map a snake_case orders row (with order_items) to the app's Order shape.
+ * total_amount holds the item total (VAT included in prices, no shipping),
+ * so subtotal is derived from items and shipping/tax are 0.
+ */
+export function mapOrderRow(row: any): Order {
+  const items = (row?.order_items ?? []).map((it: any) => ({
+    id: it?.id,
+    productId: it?.product_id,
+    product: it?.product,
+    quantity: it?.quantity,
+    price: Number(it?.price) || 0,
+  }));
+  const subtotal = items.reduce(
+    (sum: number, it: any) => sum + it.price * it.quantity,
+    0,
+  );
+  const shipping = row?.shipping_address ?? row?.shippingAddress;
+  return {
+    id: row?.id,
+    orderNumber: row?.order_number ?? row?.id ?? "",
+    status: (row?.status ?? "pending") as Order["status"],
+    paymentStatus: row?.payment_status,
+    items,
+    subtotal,
+    tax: 0,
+    shipping: 0,
+    total: Number(row?.total_amount) || subtotal,
+    shippingAddress: shipping
+      ? {
+          label: shipping.label,
+          fullName: shipping.fullName,
+          email: shipping.email,
+          phone: shipping.phone,
+          street1: shipping.street1,
+          street2: shipping.street2,
+          city: shipping.city,
+          state: shipping.state,
+          postalCode: shipping.postalCode,
+          country: shipping.country,
+        }
+      : undefined,
+    paymentMethod: row?.payment_method ?? "",
+    createdAt: row?.created_at,
+    updatedAt: row?.updated_at ?? row?.created_at,
+  };
+}
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export interface WishlistItem {
@@ -60,43 +129,8 @@ export interface CreateAddressPayload {
   isDefault?: boolean;
 }
 
-export type PaymentMethod =
-  | "cod"
-  | "cash_on_delivery"
-  | "cash"
-  | "pod"
-  | "delivery"
-  | "online"
-  | "card"
-  | "maishapay"
-  | "stripe"
-  | "upi";
-
-export interface ShippingAddressPayload {
-  fullName: string;
-  email: string;
-  phone: string;
-  street1: string;
-  street2?: string;
-  city: string;
-  state: string;
-  postalCode: string;
-  country: string;
-  label?: string;
-}
-
-export interface CreateOrderPayload {
-  paymentMethod: PaymentMethod;
-  shippingAddress: ShippingAddressPayload;
-  saveAddressToProfile?: boolean;
-  currency?: "USD" | "CDF";
-}
-
-export interface PaymentVerificationPayload {
-  sessionId: string;
-  status?: string;
-  transactionRefId?: string;
-}
+// Order creation / payment-verification payload types live in ./checkoutTypes
+// (CreateOrderRequest, VerifyPaymentRequest); hooks live in ./checkoutApi.
 
 // ─── Profile ─────────────────────────────────────────────────────────────────
 
@@ -151,11 +185,11 @@ export function useCustomerOrders() {
       const res = await apiClient.get<{
         success: boolean;
         data: {
-          orders: Order[];
+          orders: any[];
           pagination: { page: number; limit: number; total: number };
         };
       }>("/customer/orders");
-      return res.data.orders;
+      return (res.data.orders ?? []).map(mapOrderRow);
     },
     staleTime: 2 * 60 * 1000,
   });
@@ -171,71 +205,17 @@ export function useCustomerOrder(orderId: string) {
     queryFn: async () => {
       const res = await apiClient.get<{
         success: boolean;
-        data: { order: Order };
+        data: { order: any };
       }>(`/customer/orders/${orderId}`);
-      return res.data.order;
+      return mapOrderRow(res.data.order);
     },
     enabled: !!orderId,
   });
 }
 
 // ─── Orders: creation + payment verification ─────────────────────────────────
-
-/**
- * POST /api/customer/orders
- * Creates vendor-split orders from cart and initiates payment (MaishaPay or COD).
- * Backend: 201 { success, data: { orders: Order[], payment: { method, ... } } }
- */
-export function useCreateOrder() {
-  const qc = useQueryClient();
-
-  return useMutation({
-    mutationFn: (payload: CreateOrderPayload) =>
-      apiClient.post<{
-        success: boolean;
-        message?: string;
-        data: {
-          orders: Order[];
-          payment: {
-            method: string;
-            status?: string;
-            [key: string]: any;
-          };
-        };
-      }>("/customer/orders", payload),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: customerKeys.orders });
-    },
-  });
-}
-
-/**
- * POST /api/customer/orders/verify-payment
- * Verifies MaishaPay/online payment and finalizes the order.
- * Backend: { success, message, data: { orders: [updatedOrder] } }
- */
-export function useVerifyPayment() {
-  const qc = useQueryClient();
-
-  return useMutation({
-    mutationFn: (payload: PaymentVerificationPayload) =>
-      apiClient.post<{
-        success: boolean;
-        message?: string;
-        data: {
-          orders: Order[];
-        };
-      }>("/customer/orders/verify-payment", payload),
-    onSuccess: (_res, variables) => {
-      qc.invalidateQueries({ queryKey: customerKeys.orders });
-      if (variables.sessionId) {
-        qc.invalidateQueries({
-          queryKey: customerKeys.order(variables.sessionId),
-        });
-      }
-    },
-  });
-}
+// Order creation and payment verification now live in ./checkoutApi
+// (useCreateOrder, useVerifyPayment) which matches the backend contract.
 
 // ─── Addresses ───────────────────────────────────────────────────────────────
 
@@ -249,9 +229,9 @@ export function useCustomerAddresses() {
     queryFn: async () => {
       const res = await apiClient.get<{
         success: boolean;
-        data: { addresses: Address[] };
+        data: { addresses: any[] };
       }>("/customer/addresses");
-      return res.data.addresses;
+      return (res.data.addresses ?? []).map(mapAddressRow);
     },
     staleTime: 5 * 60 * 1000,
   });

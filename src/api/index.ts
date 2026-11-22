@@ -9,7 +9,9 @@ export * from './client';
 export * from './types';
 export * from './useCart';
 export * from './useCategories';
+export * from './useChat';
 export * from './useCheckout';
+export * from './useCustomer';
 export * from './useProducts';
 export * from './useStores';
 

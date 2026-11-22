@@ -1,25 +1,63 @@
 /**
  * Wenzetiindaku App Theme
  * Colors, typography, and spacing constants
- * Brand Colors: Navy Blue (#0F2A4A) + Green (#22C55E)
+ *
+ * Ported from the website design system (wenzetiindaku-frontend/src/index.css
+ * + tailwind.config.ts) so the app renders identical brand colors:
+ *   Primary:   Dark Navy  hsl(231 48% 30%)  = #283371
+ *   Secondary: Rich Orange hsl(32 100% 50%) = #FF8800
+ *   Font:      Inter (loaded app-wide in app/_layout.tsx)
  */
 
 export const Colors = {
-  // Primary brand colors (Navy Blue from Wenze logo)
-  primary: '#0F2A4A',
-  primaryDark: '#0A1F38',
-  primaryLight: '#1E3A5F',
-  primaryFaded: '#E8EEF4',
+  // Primary brand colors (Dark Navy from the website design system)
+  primary: '#283371',
+  primaryDark: '#212A5E',
+  primaryLight: '#667DFF',
+  primaryFaded: 'rgba(40, 51, 113, 0.08)',
 
-  // Secondary colors (Green from Wenze logo)
-  secondary: '#22C55E',
-  secondaryDark: '#16A34A',
-  secondaryLight: '#4ADE80',
-  secondaryFaded: 'rgba(34, 197, 94, 0.1)',
+  // Navy scale (website navy-50…950)
+  navy: {
+    50: '#F0F2FF',
+    100: '#E0E5FF',
+    200: '#C2CBFF',
+    300: '#99A8FF',
+    400: '#667DFF',
+    500: '#283371',
+    600: '#212A5E',
+    700: '#1B224B',
+    800: '#141939',
+    900: '#0D1126',
+    950: '#070813',
+  },
 
-  // Accent colors (Green highlight)
-  accent: '#22C55E',
-  accentDark: '#16A34A',
+  // Secondary brand colors (Rich Orange from the website design system)
+  secondary: '#FF8800',
+  secondaryDark: '#E65C00',
+  secondaryLight: '#FFB866',
+  secondaryFaded: 'rgba(255, 136, 0, 0.1)',
+
+  // Orange scale (website orange-50…950)
+  orange: {
+    50: '#FFF8F0',
+    100: '#FFF1E0',
+    200: '#FFE2C2',
+    300: '#FFCF99',
+    400: '#FFB866',
+    500: '#FF8800',
+    600: '#E65C00',
+    700: '#CC5200',
+    800: '#B34700',
+    900: '#993D00',
+    950: '#803300',
+  },
+
+  // Accent colors (orange highlight, matching the website)
+  accent: '#FF8800',
+  accentDark: '#E65C00',
+
+  // Hero gradient (website --hero-gradient: navy → orange, 135deg)
+  gradientHero: ['#283371', '#FF8800'] as const,
 
   // Neutral colors
   white: '#FFFFFF',
@@ -38,11 +76,11 @@ export const Colors = {
   },
 
   // Semantic colors
-  success: '#10B981',
+  success: '#16A249',
   warning: '#F59E0B',
   warningDark: '#D97706',
   warningFaded: 'rgba(245, 158, 11, 0.1)',
-  error: '#EF4444',
+  error: '#EF4343',
   info: '#3B82F6',
   infoFaded: 'rgba(59, 130, 246, 0.1)',
 
@@ -53,15 +91,15 @@ export const Colors = {
     tertiary: '#F3F4F6',
   },
 
-  // Text colors
+  // Text colors (website foreground / muted-foreground)
   text: {
-    primary: '#111827',
+    primary: '#020817',
     secondary: '#6B7280',
     tertiary: '#9CA3AF',
     inverse: '#FFFFFF',
   },
 
-  // Border colors
+  // Border colors (website border token = gray-200)
   border: {
     light: '#E5E7EB',
     medium: '#D1D5DB',
@@ -111,6 +149,17 @@ export const FontSize = {
   '5xl': 32,
 };
 
+// Inter font families (loaded via @expo-google-fonts/inter in app/_layout.tsx)
+export const FontFamily = {
+  normal: 'Inter_400Regular',
+  regular: 'Inter_400Regular',
+  medium: 'Inter_500Medium',
+  semibold: 'Inter_600SemiBold',
+  bold: 'Inter_700Bold',
+  extraBold: 'Inter_800ExtraBold',
+};
+
+// Numeric weights kept for non-Inter usages (system fallbacks)
 export const FontWeight = {
   normal: '400' as const,
   medium: '500' as const,
@@ -140,6 +189,21 @@ export const Shadow = {
     shadowRadius: 8,
     elevation: 4,
   },
+  // Brand shadow (website --shadow-primary: navy glow)
+  primary: {
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  secondary: {
+    shadowColor: Colors.secondary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
+  },
 };
 
 export default {
@@ -147,6 +211,7 @@ export default {
   Spacing,
   BorderRadius,
   FontSize,
+  FontFamily,
   FontWeight,
   Shadow,
 };

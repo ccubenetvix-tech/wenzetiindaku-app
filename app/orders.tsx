@@ -5,7 +5,7 @@
 
 import { useCustomerOrders } from '@/src/api/useCustomer';
 import { Header } from '@/src/components';
-import { BorderRadius, Colors, FontSize, FontWeight, Shadow, Spacing } from '@/src/theme';
+import { BorderRadius, Colors, FontFamily, FontSize, Shadow, Spacing } from '@/src/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
@@ -115,18 +115,18 @@ const styles = StyleSheet.create({
     ...Shadow.sm,
   },
   orderHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.sm },
-  orderNumber: { fontSize: FontSize.md, fontWeight: FontWeight.bold, color: Colors.text?.primary || '#111827' },
+  orderNumber: { fontSize: FontSize.md, fontFamily: FontFamily.bold, color: Colors.text?.primary || '#111827' },
   statusBadge: { paddingHorizontal: Spacing.sm, paddingVertical: 4, borderRadius: BorderRadius.full || 999 },
-  statusText: { fontSize: FontSize.xs, fontWeight: FontWeight.semibold },
+  statusText: { fontSize: FontSize.xs, fontFamily: FontFamily.semibold },
   orderMeta: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.sm },
   orderDate: { fontSize: FontSize.sm, color: Colors.text?.secondary || '#6B7280' },
   orderItems: { fontSize: FontSize.sm, color: Colors.text?.secondary || '#6B7280' },
   orderFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: Colors.border?.light || '#E5E7EB', paddingTop: Spacing.sm },
-  orderTotal: { fontSize: FontSize.lg, fontWeight: FontWeight.bold, color: Colors.primary },
-  emptyTitle: { fontSize: FontSize.lg, fontWeight: FontWeight.bold, color: Colors.text?.primary || '#111827', marginTop: Spacing.lg },
+  orderTotal: { fontSize: FontSize.lg, fontFamily: FontFamily.bold, color: Colors.primary },
+  emptyTitle: { fontSize: FontSize.lg, fontFamily: FontFamily.bold, color: Colors.text?.primary || '#111827', marginTop: Spacing.lg },
   emptyText: { fontSize: FontSize.md, color: Colors.text?.secondary || '#6B7280', textAlign: 'center', marginTop: Spacing.sm },
   retryBtn: { marginTop: Spacing.lg, backgroundColor: Colors.primary, paddingVertical: Spacing.sm, paddingHorizontal: Spacing.xl, borderRadius: BorderRadius.lg },
-  retryText: { color: Colors.white, fontSize: FontSize.md, fontWeight: FontWeight.semibold },
+  retryText: { color: Colors.white, fontSize: FontSize.md, fontFamily: FontFamily.semibold },
   shopBtn: { marginTop: Spacing.lg, backgroundColor: Colors.primary, paddingVertical: Spacing.sm, paddingHorizontal: Spacing.xl, borderRadius: BorderRadius.lg },
-  shopBtnText: { color: Colors.white, fontSize: FontSize.md, fontWeight: FontWeight.semibold },
+  shopBtnText: { color: Colors.white, fontSize: FontSize.md, fontFamily: FontFamily.semibold },
 });

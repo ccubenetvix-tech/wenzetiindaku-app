@@ -1,25 +1,23 @@
 // src/components/EmptyState.tsx
-import React from "react";
-import { View, Text } from "react-native";
+import { BorderRadius, Colors, FontFamily, FontSize, Spacing } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
-import {
-  Colors,
-  FontSize,
-  FontWeight,
-  Spacing,
-  BorderRadius,
-} from "@/src/theme";
+import React from "react";
+import { Text, TouchableOpacity, View } from "react-native";
 
 interface EmptyStateProps {
   title?: string;
   message?: string;
   icon?: keyof typeof Ionicons.glyphMap;
+  actionLabel?: string;
+  onAction?: () => void;
 }
 
 export default function EmptyState({
   title = "Nothing here yet",
   message = "Check back later or try a different search.",
   icon = "alert-circle-outline",
+  actionLabel,
+  onAction,
 }: EmptyStateProps) {
   return (
     <View
@@ -45,7 +43,7 @@ export default function EmptyState({
       <Text
         style={{
           fontSize: FontSize.lg,
-          fontWeight: FontWeight.semibold,
+          fontFamily: FontFamily.semibold,
           color: Colors.text.primary,
           marginBottom: Spacing.sm,
           textAlign: "center",
@@ -56,12 +54,35 @@ export default function EmptyState({
       <Text
         style={{
           fontSize: FontSize.md,
+          fontFamily: FontFamily.normal,
           color: Colors.text.secondary,
           textAlign: "center",
         }}
       >
         {message}
       </Text>
+      {actionLabel && onAction && (
+        <TouchableOpacity
+          onPress={onAction}
+          style={{
+            marginTop: Spacing.xl,
+            backgroundColor: Colors.primary,
+            paddingVertical: Spacing.md,
+            paddingHorizontal: Spacing["2xl"],
+            borderRadius: BorderRadius.lg,
+          }}
+        >
+          <Text
+            style={{
+              color: Colors.white,
+              fontSize: FontSize.md,
+              fontFamily: FontFamily.semibold,
+            }}
+          >
+            {actionLabel}
+          </Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }

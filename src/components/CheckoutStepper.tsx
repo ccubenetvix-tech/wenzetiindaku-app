@@ -4,7 +4,7 @@
  */
 
 import { CheckoutStep } from '@/src/api/checkoutTypes';
-import { Colors, FontSize, FontWeight, Spacing } from '@/src/theme';
+import { Colors, FontFamily, FontSize, Spacing } from '@/src/theme';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -109,14 +109,14 @@ const styles = StyleSheet.create({
   },
   stepLabel: {
     fontSize: FontSize.xs,
-    fontWeight: FontWeight.medium,
+    fontFamily: FontFamily.medium,
   },
   stepLabelCompleted: {
     color: Colors.secondary,
   },
   stepLabelCurrent: {
     color: Colors.primary,
-    fontWeight: FontWeight.semibold,
+    fontFamily: FontFamily.semibold,
   },
   stepLabelUpcoming: {
     color: Colors.gray[400],

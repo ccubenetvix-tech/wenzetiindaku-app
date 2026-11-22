@@ -5,7 +5,7 @@
 
 import { CartItem, useCartStore } from '@/src/api';
 import { EmptyState, Header } from '@/src/components';
-import { BorderRadius, Colors, FontSize, FontWeight, Shadow, Spacing } from '@/src/theme';
+import { BorderRadius, Colors, FontFamily, FontSize, Shadow, Spacing } from '@/src/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
   clearText: {
     fontSize: FontSize.md,
     color: Colors.error,
-    fontWeight: FontWeight.medium,
+    fontFamily: FontFamily.medium,
   },
   listContent: {
     padding: Spacing.lg,
@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
   },
   itemName: {
     fontSize: FontSize.md,
-    fontWeight: FontWeight.medium,
+    fontFamily: FontFamily.medium,
     color: Colors.text.primary,
     marginBottom: Spacing.xs,
   },
@@ -269,13 +269,13 @@ const styles = StyleSheet.create({
   },
   quantityText: {
     fontSize: FontSize.md,
-    fontWeight: FontWeight.medium,
+    fontFamily: FontFamily.medium,
     color: Colors.text.primary,
     paddingHorizontal: Spacing.md,
   },
   itemTotal: {
     fontSize: FontSize.md,
-    fontWeight: FontWeight.bold,
+    fontFamily: FontFamily.bold,
     color: Colors.text.primary,
   },
   summaryContainer: {
@@ -298,7 +298,7 @@ const styles = StyleSheet.create({
   summaryValue: {
     fontSize: FontSize.md,
     color: Colors.text.primary,
-    fontWeight: FontWeight.medium,
+    fontFamily: FontFamily.medium,
   },
   freeShippingNote: {
     fontSize: FontSize.sm,
@@ -313,12 +313,12 @@ const styles = StyleSheet.create({
   },
   totalLabel: {
     fontSize: FontSize.lg,
-    fontWeight: FontWeight.semibold,
+    fontFamily: FontFamily.semibold,
     color: Colors.text.primary,
   },
   totalValue: {
     fontSize: FontSize.xl,
-    fontWeight: FontWeight.bold,
+    fontFamily: FontFamily.bold,
     color: Colors.text.primary,
   },
   checkoutButton: {
@@ -334,6 +334,6 @@ const styles = StyleSheet.create({
   checkoutText: {
     color: Colors.white,
     fontSize: FontSize.md,
-    fontWeight: FontWeight.semibold,
+    fontFamily: FontFamily.semibold,
   },
 });

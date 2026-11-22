@@ -5,7 +5,7 @@
 
 import { useProduct } from "@/src/api";
 import { useSyncedCart } from "@/src/api/useCart";
-import { ErrorState, Header } from "@/src/components";
+import { ErrorState, Header, VendorChatButton } from "@/src/components";
 import {
   BorderRadius,
   Colors,
@@ -28,6 +28,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { FontFamily } from '@/src/theme';
 
 const { width } = Dimensions.get("window");
 
@@ -220,6 +221,13 @@ export default function ProductDetailsScreen() {
             <Text style={styles.sectionLabel}>Description</Text>
             <Text style={styles.description}>{product.description}</Text>
           </View>
+
+          {/* Chat with vendor */}
+          {product.storeId && (
+            <View style={styles.chatSection}>
+              <VendorChatButton vendorId={product.storeId} />
+            </View>
+          )}
         </View>
       </ScrollView>
 
@@ -293,14 +301,14 @@ const styles = StyleSheet.create({
   inCartText: {
     color: Colors.white,
     fontSize: FontSize.sm,
-    fontWeight: FontWeight.medium,
+    fontFamily: FontFamily.medium,
   },
   infoContainer: {
     padding: Spacing.lg,
   },
   productName: {
     fontSize: FontSize["2xl"],
-    fontWeight: FontWeight.bold,
+    fontFamily: FontFamily.bold,
     color: Colors.text.primary,
     marginBottom: Spacing.md,
     lineHeight: 30,
@@ -322,7 +330,7 @@ const styles = StyleSheet.create({
   },
   price: {
     fontSize: FontSize["3xl"],
-    fontWeight: FontWeight.bold,
+    fontFamily: FontFamily.bold,
     color: Colors.text.primary,
   },
   comparePrice: {
@@ -341,7 +349,7 @@ const styles = StyleSheet.create({
   discountText: {
     color: Colors.white,
     fontSize: FontSize.xs,
-    fontWeight: FontWeight.bold,
+    fontFamily: FontFamily.bold,
   },
   stockContainer: {
     flexDirection: "row",
@@ -351,13 +359,13 @@ const styles = StyleSheet.create({
   inStockText: {
     fontSize: FontSize.md,
     color: Colors.success,
-    fontWeight: FontWeight.medium,
+    fontFamily: FontFamily.medium,
     marginLeft: Spacing.xs,
   },
   outOfStockText: {
     fontSize: FontSize.md,
     color: Colors.error,
-    fontWeight: FontWeight.medium,
+    fontFamily: FontFamily.medium,
     marginLeft: Spacing.xs,
   },
   quantitySection: {
@@ -365,7 +373,7 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     fontSize: FontSize.md,
-    fontWeight: FontWeight.semibold,
+    fontFamily: FontFamily.semibold,
     color: Colors.text.primary,
     marginBottom: Spacing.sm,
   },
@@ -387,9 +395,13 @@ const styles = StyleSheet.create({
   },
   quantityText: {
     fontSize: FontSize.lg,
-    fontWeight: FontWeight.semibold,
+    fontFamily: FontFamily.semibold,
     color: Colors.text.primary,
     paddingHorizontal: Spacing.xl,
+  },
+  chatSection: {
+    paddingHorizontal: Spacing.lg,
+    marginBottom: Spacing.lg,
   },
   descriptionSection: {
     marginBottom: Spacing["4xl"],
@@ -424,7 +436,7 @@ const styles = StyleSheet.create({
   addToCartText: {
     color: Colors.secondary,
     fontSize: FontSize.md,
-    fontWeight: FontWeight.semibold,
+    fontFamily: FontFamily.semibold,
   },
   buyNowButton: {
     flex: 1,
@@ -437,7 +449,7 @@ const styles = StyleSheet.create({
   buyNowText: {
     color: Colors.white,
     fontSize: FontSize.md,
-    fontWeight: FontWeight.semibold,
+    fontFamily: FontFamily.semibold,
   },
   disabledButton: {
     backgroundColor: Colors.gray[300],

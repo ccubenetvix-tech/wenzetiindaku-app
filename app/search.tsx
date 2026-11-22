@@ -1,7 +1,7 @@
 import { useProducts } from '@/src/api/useProducts';
 import { EmptyState } from '@/src/components/ErrorState';
 import { ProductCard } from '@/src/components/ProductCard';
-import { BorderRadius, Colors, FontSize, Spacing } from '@/src/theme';
+import { BorderRadius, Colors, FontFamily, FontSize, Spacing } from '@/src/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
   },
   suggestionsTitle: {
     fontSize: FontSize.md,
-    fontWeight: '600',
+    fontFamily: FontFamily.semibold,
     color: Colors.text.primary,
     marginBottom: Spacing.md,
   },
@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
   categoryChipText: {
     fontSize: FontSize.sm,
     color: Colors.primary[700],
-    fontWeight: '500',
+    fontFamily: FontFamily.medium,
   },
   loadingContainer: {
     flex: 1,

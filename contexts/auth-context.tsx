@@ -39,6 +39,15 @@ interface AuthContextType {
     password: string,
     role: "customer" | "vendor",
   ) => Promise<void>;
+  signUpCustomer: (data: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    password: string;
+    agreeToTerms: boolean;
+  }) => Promise<void>;
+  requestPasswordReset: (email: string) => Promise<void>;
+  resetPassword: (email: string, otp: string, newPassword: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   error: string | null;
@@ -230,6 +239,111 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const signUpCustomer = async (data: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    password: string;
+    agreeToTerms: boolean;
+  }) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const res = await fetch(`${ApiConfig.baseUrl}/auth/customer/signup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      const json = await res.json();
+
+      if (!res.ok) {
+        const err: any = new Error(
+          json?.error?.message ??
+            json?.message ??
+            "Sign up failed. Please try again.",
+        );
+        // Backend flags emails that exist but are unverified so the UI can
+        // jump straight to the OTP-verify step instead of a dead end.
+        err.unverifiedAccount = json?.error?.unverifiedAccount === true;
+        throw err;
+      }
+      // 201 response: account created, OTP email sent. User must verify.
+    } catch (e: any) {
+      setError(e.message || "Sign up failed. Please try again.");
+      throw e;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const requestPasswordReset = async (email: string) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const res = await fetch(
+        `${ApiConfig.baseUrl}/auth/customer/forgot-password`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        },
+      );
+
+      const json = await res.json();
+
+      if (!res.ok) {
+        throw new Error(
+          json?.error?.message ??
+            json?.message ??
+            "Failed to send reset code. Please try again.",
+        );
+      }
+    } catch (e: any) {
+      setError(e.message || "Failed to send reset code. Please try again.");
+      throw e;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const resetPassword = async (
+    email: string,
+    otp: string,
+    newPassword: string,
+  ) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const res = await fetch(
+        `${ApiConfig.baseUrl}/auth/customer/reset-password`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, otp, newPassword }),
+        },
+      );
+
+      const json = await res.json();
+
+      if (!res.ok) {
+        throw new Error(
+          json?.error?.message ??
+            json?.message ??
+            "Failed to reset password. Please try again.",
+        );
+      }
+    } catch (e: any) {
+      setError(e.message || "Failed to reset password. Please try again.");
+      throw e;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const signInWithGoogle = async () => {
     try {
       setError(null);
@@ -264,6 +378,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         isAuthenticated: !!user,
         signInWithEmail,
+        signUpCustomer,
+        requestPasswordReset,
+        resetPassword,
         signInWithGoogle,
         signOut,
         error,

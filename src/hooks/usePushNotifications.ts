@@ -5,6 +5,7 @@
  */
 
 import { ApiConfig } from '@/src/config';
+import { Colors } from '@/src/theme';
 import { secureStorage } from '@/src/storage';
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
@@ -24,8 +25,8 @@ Notifications.setNotificationHandler({
 
 export function usePushNotifications(isAuthenticated: boolean) {
   const [expoPushToken, setExpoPushToken] = useState<string | null>(null);
-  const notificationListener = useRef<Notifications.EventSubscription>();
-  const responseListener = useRef<Notifications.EventSubscription>();
+  const notificationListener = useRef<Notifications.EventSubscription | undefined>(undefined);
+  const responseListener = useRef<Notifications.EventSubscription | undefined>(undefined);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -67,7 +68,7 @@ async function registerForPushNotifications(): Promise<string | null> {
       name: 'Order Updates',
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#0F2A4A',
+      lightColor: Colors.primary,
     });
   }
 

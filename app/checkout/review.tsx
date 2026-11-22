@@ -3,11 +3,12 @@
  * Step 3: Review order details before final confirmation
  */
 
-import { useConfirmOrder } from '@/src/api/checkoutApi';
+import { useCreateOrder } from '@/src/api/checkoutApi';
+import { OrderConfirmation } from '@/src/api/checkoutTypes';
 import { useCheckoutStore } from '@/src/api/useCheckout';
 import { CheckoutStepper } from '@/src/components/CheckoutStepper';
 import { OrderSummaryCard } from '@/src/components/OrderSummaryCard';
-import { BorderRadius, Colors, FontSize, FontWeight, Shadow, Spacing } from '@/src/theme';
+import { BorderRadius, Colors, FontFamily, FontSize, Shadow, Spacing } from '@/src/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -26,9 +27,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 const WenzeLogo = require('@/assets/images/splash-icon.png');
 
 const PAYMENT_METHOD_LABELS: Record<string, string> = {
-  card: 'Credit/Debit Card',
-  mobile_money: 'Mobile Money',
-  bank_transfer: 'Bank Transfer',
+  maishapay: 'Pay Online (MaishaPay)',
+  online: 'Pay Online (MaishaPay)',
   cod: 'Cash on Delivery',
 };
 
@@ -38,16 +38,17 @@ export default function ReviewScreen() {
     orderSummary,
     shippingAddress,
     selectedPaymentMethod,
-    paymentIntent,
     setStep,
     setOrderConfirmation,
+    setMaishapayCheckout,
+    resetCheckout,
     setLoading,
     isLoading,
     cartItems,
   } = useCheckoutStore();
 
   const [termsAccepted, setTermsAccepted] = useState(false);
-  const confirmOrderMutation = useConfirmOrder();
+  const createOrderMutation = useCreateOrder();
 
   useEffect(() => {
     setStep('review');
@@ -89,19 +90,55 @@ export default function ReviewScreen() {
     setLoading(true);
 
     try {
-      const confirmation = await confirmOrderMutation.mutateAsync({
-        sessionId: 'checkout-session',
-        paymentIntentId: paymentIntent?.id || '',
+      const result = await createOrderMutation.mutateAsync({
+        paymentMethod: selectedPaymentMethod.type,
+        shippingAddress,
+        saveAddressToProfile: shippingAddress.saveToProfile ?? false,
+        currency: 'USD',
       });
 
-      setOrderConfirmation(confirmation);
+      const masterOrder = result.orders?.[0];
 
-      // Navigate to confirmation screen
-      router.replace('/checkout/confirmation');
-    } catch (error) {
+      if (selectedPaymentMethod.type === 'cod') {
+        // COD: orders are finalized immediately by the backend
+        const confirmation: OrderConfirmation = {
+          orderId: masterOrder?.id || '',
+          orderNumber: masterOrder?.order_number || masterOrder?.id || '',
+          status: 'confirmed',
+          items: orderSummary.items,
+          shippingAddress,
+          paymentMethod: 'cod',
+          subtotal: orderSummary.subtotal,
+          shipping: orderSummary.shipping,
+          vat: orderSummary.vat,
+          total: orderSummary.total,
+          currency: orderSummary.currency,
+          estimatedDelivery: new Date(
+            Date.now() + 7 * 24 * 60 * 60 * 1000,
+          ).toISOString(),
+          createdAt: masterOrder?.created_at || new Date().toISOString(),
+        };
+        setOrderConfirmation(confirmation);
+        resetCheckout();
+        router.replace('/checkout/confirmation');
+        return;
+      }
+
+      // Online (MaishaPay): orders are pending until the payment is verified.
+      // The backend returns the hosted checkout payload { url, fields }.
+      const payment = result.payment;
+      if (!payment?.url || !payment?.fields) {
+        throw new Error(
+          'Online payments are currently unavailable. Please try Cash on Delivery.',
+        );
+      }
+      setMaishapayCheckout({ url: payment.url, fields: payment.fields });
+      router.push('/checkout/maishapay');
+    } catch (error: any) {
       Alert.alert(
         'Order Failed',
-        'We couldn\'t process your order. Please try again.'
+        error?.message ||
+          'We couldn\'t process your order. Please try again.'
       );
     } finally {
       setLoading(false);
@@ -152,11 +189,12 @@ export default function ReviewScreen() {
 
           <View style={styles.addressCard}>
             <Text style={styles.addressName}>
-              {shippingAddress.firstName} {shippingAddress.lastName}
+              {shippingAddress.fullName}
+              {shippingAddress.label ? ` · ${shippingAddress.label}` : ''}
             </Text>
             <Text style={styles.addressLine}>
-              {shippingAddress.streetAddress}
-              {shippingAddress.apartment ? `, ${shippingAddress.apartment}` : ''}
+              {shippingAddress.street1}
+              {shippingAddress.street2 ? `, ${shippingAddress.street2}` : ''}
             </Text>
             <Text style={styles.addressLine}>
               {shippingAddress.city}, {shippingAddress.state} {shippingAddress.postalCode}
@@ -190,13 +228,9 @@ export default function ReviewScreen() {
             <View style={styles.paymentIconWrapper}>
               <Ionicons
                 name={
-                  selectedPaymentMethod.type === 'card'
-                    ? 'card'
-                    : selectedPaymentMethod.type === 'mobile_money'
-                    ? 'phone-portrait'
-                    : selectedPaymentMethod.type === 'bank_transfer'
-                    ? 'business'
-                    : 'cash'
+                  selectedPaymentMethod.type === 'cod'
+                    ? 'cash'
+                    : 'phone-portrait'
                 }
                 size={24}
                 color={Colors.primary}
@@ -359,7 +393,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: FontSize.lg,
-    fontWeight: FontWeight.semibold,
+    fontFamily: FontFamily.semibold,
     color: Colors.text.primary,
   },
   logoImage: {
@@ -383,7 +417,7 @@ const styles = StyleSheet.create({
   },
   stepTitle: {
     fontSize: FontSize.lg,
-    fontWeight: FontWeight.semibold,
+    fontFamily: FontFamily.semibold,
     color: Colors.text.primary,
   },
   stepSubtitle: {
@@ -408,7 +442,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: FontSize.md,
-    fontWeight: FontWeight.semibold,
+    fontFamily: FontFamily.semibold,
     color: Colors.text.primary,
     marginLeft: Spacing.sm,
   },
@@ -421,7 +455,7 @@ const styles = StyleSheet.create({
   editButtonText: {
     fontSize: FontSize.sm,
     color: Colors.primary,
-    fontWeight: FontWeight.medium,
+    fontFamily: FontFamily.medium,
     marginLeft: Spacing.xs,
   },
   addressCard: {
@@ -431,7 +465,7 @@ const styles = StyleSheet.create({
   },
   addressName: {
     fontSize: FontSize.md,
-    fontWeight: FontWeight.semibold,
+    fontFamily: FontFamily.semibold,
     color: Colors.text.primary,
     marginBottom: Spacing.xs,
   },
@@ -471,7 +505,7 @@ const styles = StyleSheet.create({
   },
   paymentMethodName: {
     fontSize: FontSize.md,
-    fontWeight: FontWeight.semibold,
+    fontFamily: FontFamily.semibold,
     color: Colors.text.primary,
   },
   paymentMethodType: {
@@ -490,7 +524,7 @@ const styles = StyleSheet.create({
   verifiedText: {
     fontSize: FontSize.xs,
     color: Colors.secondary,
-    fontWeight: FontWeight.medium,
+    fontFamily: FontFamily.medium,
     marginLeft: 4,
   },
   itemsList: {
@@ -522,7 +556,7 @@ const styles = StyleSheet.create({
   },
   itemName: {
     fontSize: FontSize.sm,
-    fontWeight: FontWeight.medium,
+    fontFamily: FontFamily.medium,
     color: Colors.text.primary,
   },
   itemQuantity: {
@@ -532,7 +566,7 @@ const styles = StyleSheet.create({
   },
   itemPrice: {
     fontSize: FontSize.md,
-    fontWeight: FontWeight.semibold,
+    fontFamily: FontFamily.semibold,
     color: Colors.text.primary,
   },
   summarySection: {
@@ -553,11 +587,11 @@ const styles = StyleSheet.create({
   deliveryTitle: {
     fontSize: FontSize.sm,
     color: Colors.secondary,
-    fontWeight: FontWeight.medium,
+    fontFamily: FontFamily.medium,
   },
   deliveryDate: {
     fontSize: FontSize.md,
-    fontWeight: FontWeight.semibold,
+    fontFamily: FontFamily.semibold,
     color: Colors.text.primary,
     marginTop: 2,
   },
@@ -591,7 +625,7 @@ const styles = StyleSheet.create({
   },
   termsLink: {
     color: Colors.primary,
-    fontWeight: FontWeight.medium,
+    fontFamily: FontFamily.medium,
   },
   securitySection: {
     flexDirection: 'row',
@@ -635,7 +669,7 @@ const styles = StyleSheet.create({
   },
   totalAmount: {
     fontSize: FontSize.xl,
-    fontWeight: FontWeight.bold,
+    fontFamily: FontFamily.bold,
     color: Colors.text.primary,
   },
   placeOrderButton: {
@@ -651,7 +685,7 @@ const styles = StyleSheet.create({
   placeOrderText: {
     fontSize: FontSize.md,
     color: Colors.white,
-    fontWeight: FontWeight.bold,
+    fontFamily: FontFamily.bold,
   },
   buttonDisabled: {
     opacity: 0.7,

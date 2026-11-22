@@ -13,6 +13,7 @@ export { default as OrderSummaryCard } from "./OrderSummaryCard";
 export { default as ProductCard } from "./ProductCard";
 export { default as SectionHeader } from "./SectionHeader";
 export { default as StoreCard } from "./StoreCard";
+export { default as VendorChatButton } from "./VendorChatButton";
 export { 
   Skeleton,
   ProductCardSkeleton,

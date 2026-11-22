@@ -4,13 +4,13 @@
  */
 
 import { useCartItemCount } from '@/src/api';
-import { Colors } from '@/src/theme';
+import { Colors, FontFamily } from '@/src/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-function CartTabIcon({ color }: { color: string; focused: boolean }) {
+function CartTabIcon({ color, focused }: { color: string; focused: boolean }) {
   const cartCount = useCartItemCount();
   
   return (
@@ -47,7 +47,7 @@ export default function TabLayout() {
         },
         tabBarLabelStyle: {
           fontSize: 11,
-          fontWeight: '500',
+          fontFamily: FontFamily.medium,
         },
       }}
     >
@@ -126,6 +126,6 @@ const styles = StyleSheet.create({
   badgeText: {
     color: Colors.white,
     fontSize: 10,
-    fontWeight: 'bold',
+    fontFamily: FontFamily.bold,
   },
 });
