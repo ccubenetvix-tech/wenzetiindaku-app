@@ -16,7 +16,7 @@ export const ApiConfig = {
   // VITE_PRODUCTION_BACKEND_URL default). Override with EXPO_PUBLIC_API_BASE_URL.
   baseUrl:
     process.env.EXPO_PUBLIC_API_BASE_URL ||
-    'https://wenzetiindaku-backend-ccubenetvix-tech2481-dp5p5n4l.leapcell.dev/api',
+    'https://wenzetiindaku-backend-production.up.railway.app/api',
   timeout: parseInt(process.env.EXPO_PUBLIC_API_TIMEOUT || '10000', 10),
   retryAttempts: 3,
 } as const;
